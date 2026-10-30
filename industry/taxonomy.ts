@@ -142,7 +142,7 @@ export const TOPIC_TAGS = [
 
 /** 可选的实体标签（机构、计划、平台）。 */
 export const ENTITY_TAGS = [
-  "World Mosquito Program", "Monash University", "云南省寄生虫病防治所", "中国疾控中心",
+  "World Mosquito Program", "WMP", "Monash University", "云南省寄生虫病防治所", "中国疾控中心",
   "IAEA", "WHO", "CDC", "Institut Pasteur",
   "LSHTM", "Imperial College London", "Johns Hopkins", "ECDC", "PAHO", "Fiocruz",
 ] as const;
@@ -221,7 +221,7 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
   "china-cdc": { name: "中国疾控中心", displayTag: null, aliases: ["Chinese Center for Disease Control and Prevention", "China CDC", "中国疾病预防控制中心", "中国疾控中心"], orgNames: ["中国疾病预防控制中心", "China CDC"] },
   iaea: { name: "IAEA", displayTag: null, aliases: ["International Atomic Energy Agency", "IAEA"], orgNames: ["IAEA"] },
   who: { name: "WHO", displayTag: "WHO", aliases: ["World Health Organization", "WHO", "世界卫生组织"], orgNames: ["World Health Organization", "WHO"] },
-  cdc: { name: "US CDC", displayTag: "CDC", aliases: ["Centers for Disease Control and Prevention", "US CDC", "CDC"], orgNames: ["Centers for Disease Control and Prevention", "CDC"] },
+  cdc: { name: "CDC", displayTag: "CDC", aliases: ["Centers for Disease Control and Prevention", "US CDC", "CDC"], orgNames: ["Centers for Disease Control and Prevention", "CDC"] },
   pasteur: { name: "Institut Pasteur", displayTag: null, aliases: ["Institut Pasteur", "Pasteur Institute"], orgNames: ["Institut Pasteur"] },
   lshtm: { name: "LSHTM", displayTag: null, aliases: ["London School of Hygiene & Tropical Medicine", "London School of Hygiene and Tropical Medicine", "LSHTM"], orgNames: ["London School of Hygiene & Tropical Medicine", "LSHTM"] },
   imperial: { name: "Imperial College London", displayTag: null, aliases: ["Imperial College London", "Imperial College"], orgNames: ["Imperial College London"] },
@@ -233,9 +233,23 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
 
 /**
  * 身份词典：摘要和标题里出现的机构，必须在原文里也出现过，否则退回原标题、丢掉摘要（防止模型张冠李戴）。
- * 学术文献的机构通常只出现在作者单位，误伤概率高于收益，故置空。
+ * 只用中文全名和足够长的英文名（"World Health Organization" 这种），不把 WHO、CDC、IAEA
+ * 这类三四字母缩写放进模式里——它们在英文正文里的误伤率远高于收益。
  */
-export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; patterns: RegExp[] }> = [];
+export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; patterns: RegExp[] }> = Object.entries(ENTITIES)
+  .flatMap(([id, e]) => {
+    const words = [...new Set([...(e.orgNames ?? []), ...e.aliases])].filter(
+      (n) => /[\u4e00-\u9fa5]/.test(n) || n.replace(/[^A-Za-z]/g, "").length >= 8,
+    );
+    if (words.length === 0) return [];
+    return [{
+      id,
+      name: e.name,
+      patterns: words.map((n) =>
+        /[\u4e00-\u9fa5]/.test(n) ? new RegExp(n) : new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"),
+      ),
+    }];
+  });
 
 /** 这些域名上的文章，发布方就是对应的机构（学术文献不适用）。 */
 export const PUBLISHER_DOMAINS: ReadonlyArray<{ entityId: string; domains: readonly string[] }> = [];
