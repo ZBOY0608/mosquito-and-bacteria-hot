@@ -22,6 +22,13 @@ interface ItemIn {
   url?: unknown;
   publishedAt?: unknown;
   author?: unknown;
+  /**
+   * 正文或摘要原文。文献的“正文”就是摘要：给了它，`body_status` 直接落 `ok`，`bare` 为假，
+   * 抽取步骤不会再去抓页面（对外部推送尤其重要，见 docs）。
+   */
+  bodyText?: unknown;
+  /** 原文节选，用于详情页展示原文语言的内容；不影响正文判定。 */
+  excerpt?: unknown;
   raw?: { _aihot?: { backfill?: boolean; baseline?: boolean } } & Record<string, unknown>;
 }
 
@@ -51,6 +58,11 @@ export async function ingestItems(body: { sourceId?: unknown; sourceName?: unkno
     seen.add(url);
     const publication = readPublicationDate(typeof it.publishedAt === "string" ? it.publishedAt : null, "+00:00");
     const flags = it.raw?._aihot ?? {};
+    // 外部推送常常自带摘要，没有摘要就没有可判定的材料：两者都收，正文为空时由 excerpt 兜底，
+    // 使 body_status 落 ok、bare 为假，避免 worker 去抓本来抓不到（或不该抓）的原站页面。
+    const bodyText = typeof it.bodyText === "string" && it.bodyText.trim() ? it.bodyText.trim() : null;
+    const excerpt = typeof it.excerpt === "string" && it.excerpt.trim() ? it.excerpt.trim() : null;
+    const effectiveBody = bodyText ?? excerpt;
     const res = await upsertMaterial({
       sourceId: source!.id,
       // Normalize only for deduplication. Ownership needs the reported origin (including www and
@@ -59,6 +71,9 @@ export async function ingestItems(body: { sourceId?: unknown; sourceName?: unkno
       title,
       author: typeof it.author === "string" ? it.author.slice(0, 200) : null,
       ...publication,
+      bodyText: effectiveBody,
+      excerpt,
+      bodyStatus: effectiveBody ? "ok" : undefined,
       raw: it.raw ?? null,
       via: "ingest",
       backfill: flags.backfill ? "reported-backfill" : flags.baseline ? "reported-baseline" : null,
