@@ -53,10 +53,10 @@ export const SITE = {
   /** 标准图标（favicon.ico、icon.png、icon-192.png、apple-icon.png、logo.svg）以外也放在网站根目录的图标，site/brand/ 里的文件名（选填）；manifest.webmanifest 或外站引用了它们时用。 */
   rootIcons: [] as string[],
   /**
-   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 mosquitohot_get_latest、mosquitohot_search……
+   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 vbdhot_get_latest、vbdhot_search……
    * 已经有人接入后就不要再改。
    */
-  mcpPrefix: "mosquitohot",
+  mcpPrefix: "vbdhot",
   /**
    * 公开接口（MCP、OpenAPI、llms.txt）的版本号，只升不降。
    * 改了接口里已有的字段或含义时升主版本，并在部署说明里写清。
