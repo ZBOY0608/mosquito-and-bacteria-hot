@@ -3,6 +3,6 @@ contact_links:
   - name: 私密报告安全漏洞
     url: https://github.com/ZBOY0608/vector-borne-disease-hot/security/advisories/new
     about: 安全漏洞通过此入口提交，请不要在公开 Issue 中披露利用细节。
-  - name: 上游框架的文档与问答
-    url: https://github.com/KKKKhazix/AIHOT/discussions
-    about: 本站派生自 AIHOT。框架本身的机制问题可以在上游讨论区找答案。
+  - name: 先看文档
+    url: https://github.com/ZBOY0608/vector-borne-disease-hot/tree/main/docs
+    about: 五轨怎么分、怎么部署、怎么改配置、怎么校准门槛，都在 docs/ 下；提问前先翻一遍能省一半来回。
