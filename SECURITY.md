@@ -1,6 +1,6 @@
 # 安全问题报告
 
-如果你发现权限绕过、密钥泄露、注入或其他可能影响部署安全的问题，请通过 [GitHub 私密漏洞报告](https://github.com/KKKKhazix/AIHOT/security/advisories/new) 联系维护者。
+如果你发现权限绕过、密钥泄露、注入或其他可能影响部署安全的问题，请通过**本仓库的 GitHub 私密漏洞报告**提交（仓库页 → Security → Report a vulnerability），不要开公开 Issue。
 
 请提供：
 
@@ -8,6 +8,16 @@
 - 在你有权测试的环境中复现问题的最少步骤；
 - 可能造成的影响，以及已移除敏感信息的日志或截图。
 
-不要在公开 Issue、讨论区或 PR 中提前披露可利用的漏洞细节，也不要上传真实密钥、密码、Cookie、用户数据或完整数据库。普通使用问题和非安全 Bug 请使用 [讨论区](https://github.com/KKKKhazix/AIHOT/discussions/categories/q-a) 或 [Issue](https://github.com/KKKKhazix/AIHOT/issues/new/choose)。
+不要上传真实密钥、密码、Cookie、用户数据或完整数据库。普通使用问题走 Issue。
 
-目前优先在公开仓库最新的 `main` 上验证和修复安全问题，没有单独维护的长期支持分支。维护者会确认影响范围、准备修复，并在适当时机发布说明；暂不承诺固定响应时间。
+这是个人维护的项目，没有长期支持分支，只在最新的 `main` 上验证和修复，暂不承诺固定响应时间。
+
+## 部署时的最低安全要求
+
+本站的管理后台（`/admin`）和内容推送接口（`/api/ingest/items`）都在公网上可达，部署时请确认：
+
+- `.env` 里的 `ADMIN_PASSWORD`、`INGEST_TOKEN`、`SESSION_SECRET` 都是随机生成的长串，不是默认值；
+- `.env` 不进版本库，文件权限只给运行账户；
+- 对外开放前先确认后台登录可用，避免把未设密码的后台暴露出去。
+
+框架本身的安全机制（付费请求回执与预算熔断、公开读取层的可见性规则、管理员与访客的内容一致性）见 [架构](docs/architecture.md)。
