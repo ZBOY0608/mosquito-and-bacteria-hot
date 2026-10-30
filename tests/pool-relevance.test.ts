@@ -50,11 +50,11 @@ test("short and multi-term relevance keep cross-field AND and deterministic scor
 });
 
 test("company relevance retains tag-only candidates, boosts and unique totals", async () => {
-  await add("company-both", "openai", "openai", { title: "OpenAI", tags: ["entity:openai"], age: 100 });
-  await add("company-tag", "", "", { tags: ["entity:openai"], noSearchRow: true, age: 1 });
+  await add("company-both", "openai", "openai", { title: "OpenAI", tags: ["entity:wmp"], age: 100 });
+  await add("company-tag", "", "", { tags: ["entity:wmp"], noSearchRow: true, age: 1 });
   await add("company-text", "openai qy", "openai", { title: "OpenAI", age: 60 });
   await add("company-low", "openai", "", { age: 1 });
-  await add("company-withdrawn", "openai", "openai", { tags: ["entity:openai"], visibility: "withdrawn" });
+  await add("company-withdrawn", "openai", "openai", { tags: ["entity:wmp"], visibility: "withdrawn" });
   const company = await loadPool(query("OpenAI"));
   assert.deepEqual(company.items.map(item => item.id), ["company-both", "company-tag", "company-text", "company-low"].map(id));
   assert.equal(company.total, 4, "the text-and-tag candidate counts once");
