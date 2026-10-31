@@ -4,6 +4,7 @@ import type { PgBoss } from "pg-boss";
 import { ensureQueue, recordRun } from "@aihot/backend/jobs/queue";
 import { serverModules, type Scheduled } from "@aihot/backend/modules";
 import { sweepUnprocessed } from "@aihot/backend/jobs/content";
+import { fillFigureGaps } from "@aihot/backend/content/figures";
 import { translatePending } from "@aihot/backend/editorial/translate";
 import { adaptIntervals, scheduleDueSources } from "@aihot/backend/sources/collect";
 import { scheduleMpReconcile } from "@aihot/backend/sources/mp";
@@ -54,6 +55,9 @@ const ENGINE_SCHEDULES: Scheduled[] = [
         { name: "sources.adapt-intervals", cron: "20 4 * * *", run: adaptIntervals },
         // X accounts quiet for a day: a renamed one is followed to its new handle (SocialData, paid per lookup).
         { name: "sources.x-renames", cron: "50 4 * * *", missed: "once" as const, run: () => followXRenames() },
+        // Figures a paper's metadata arrived without, read from its open-access full text: a few papers an
+        // hour, so a publisher is never hammered and a new paper gets its figures the same day.
+        { name: "content.figures", cron: "45 * * * *", run: () => fillFigureGaps() },
         // Icons are read from the sources' own sites, so they stop with collection.
         { name: "sources.icons", cron: "40 4 * * *", missed: "once" as const, run: () => refreshSourceIcons() },
       ]
