@@ -22,7 +22,6 @@ const provider = await stub(async (_hit, req) => {
   if (req.url.endsWith(`/bot/v2/hook/test-${T}`)) {
     assert.equal(body.msg_type, "text");
     hooked.push(body.content.text as string);
-    hookedAt.push(performance.now());
     hookedBytes.push(Buffer.byteLength(req.body));
     return failing ? { code: 19001, msg: "synthetic webhook failure" } : { StatusCode: 0, code: 0, msg: "success" };
   }
@@ -32,9 +31,13 @@ const provider = await stub(async (_hit, req) => {
 });
 const realFetch = globalThis.fetch;
 // Only the fictional Feishu transport goes to the local stub; any other destination is refused.
+// The webhook's rate is stamped when the request leaves, not when the stub's server gets around to
+// it: under the runner's parallel load a request can sit in the local server's queue for tens of
+// milliseconds, which shrank a real 600 ms gap below the 590 ms the limit is asserted with.
 globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
   const url = new URL(input instanceof Request ? input.url : String(input));
   assert.equal(url.origin, "https://open.feishu.cn");
+  if (url.pathname.startsWith("/open-apis/bot/v2/hook/")) hookedAt.push(performance.now());
   return realFetch(`${provider.url}${url.pathname}${url.search}`, init);
 }) as typeof fetch;
 
