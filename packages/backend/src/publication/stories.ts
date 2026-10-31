@@ -153,7 +153,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     FROM cs`;
   const ranking = await latestHotRanking();
   const entry = ranking?.entries.find((e) => e.storyId === storyId) ?? null;
-  // Only hours observed in full are drawn (the chart leaves a gap otherwise), over one comparable group.
+  // Only hours observed in full are drawn (the chart leaves a gap otherwise).
   const heat = await heatSeries(storyId, now);
   // Complete when none of the sources behind the last 48 hours' participants is behind on collection.
   const behind = behindSources(await sourceClocks(), now.getTime(), true);

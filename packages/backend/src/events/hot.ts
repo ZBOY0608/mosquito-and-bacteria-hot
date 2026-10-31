@@ -302,34 +302,21 @@ export async function snapshotHeat(at = new Date()): Promise<{ stories: number; 
 }
 
 /**
- * A story's heat hour by hour for its page chart: the hours observed in full over the
- * last `days`, each computed from the current evidence of one group of participants, those whose
- * sources were all collecting before the first plotted hour's window began, so the line compares like
- * with like across the whole plot. No such participant: no line.
+ * A story's heat hour by hour for its page chart: the hours recorded in full over the last `days`.
+ *
+ * The hourly snapshot (`snapshotHeat`) already writes exactly this row: the heat of that hour, from
+ * the evidence it could see then, computed with the same window and half-life. So the rows are the
+ * series and are read back as they are. Re-deriving them here used to drop every participant whose
+ * source began after the window before the first plotted hour — a young site, where every source is
+ * newer than that window, lost all of them and the page drew no line at all. Hours that were not
+ * observed in full are left out (the chart draws a gap there), and a series that is all zero is not
+ * worth a chart.
  */
 export async function heatSeries(storyId: number, now = new Date(), days = 7): Promise<Array<{ hour: Date; heat: number; participants: number }>> {
-  const hours = (await sql<{ hour: Date }[]>`
-    SELECT hour FROM story_heat_hourly WHERE story_id = ${storyId} AND complete AND hour > ${new Date(now.getTime() - days * 86400_000)} AND hour <= ${now}
-    ORDER BY hour`).map((h) => h.hour.getTime());
-  if (!hours.length) return [];
-  const since = hours[0]! - WINDOW_HOURS * 3600_000;
-  const rows = await sql<{ participant_key: string; observed_at: Date; source_since: Date }[]>`
-    SELECT participant_key, observed_at, source_since FROM ${currentSignals()} cs
-    WHERE story_id = ${storyId} AND observed_at > ${new Date(since)} AND observed_at <= ${now}`;
-  const late = new Set(rows.filter((r) => r.source_since.getTime() > since).map((r) => r.participant_key));
-  const times = new Map<string, number[]>();
-  for (const r of rows) if (!late.has(r.participant_key)) times.set(r.participant_key, [...(times.get(r.participant_key) ?? []), r.observed_at.getTime()]);
-  const series = hours.map((hour) => {
-    let heat = 0;
-    let participants = 0;
-    for (const list of times.values()) {
-      let last = -Infinity;
-      for (const t of list) if (t <= hour && t > hour - WINDOW_HOURS * 3600_000 && t > last) last = t;
-      if (last === -Infinity) continue;
-      heat += 0.5 ** ((hour - last) / 3600_000 / HALF_LIFE_HOURS);
-      participants += 1;
-    }
-    return { hour: new Date(hour), heat: heatIndex(heat), participants };
-  });
+  const rows = await sql<{ hour: Date; heat: string; participants: number }[]>`
+    SELECT hour, heat, participants FROM story_heat_hourly
+    WHERE story_id = ${storyId} AND complete AND hour > ${new Date(now.getTime() - days * 86400_000)} AND hour <= ${now}
+    ORDER BY hour`;
+  const series = rows.map((r) => ({ hour: r.hour, heat: Number(r.heat), participants: Number(r.participants) }));
   return series.some((p) => p.heat > 0) ? series : [];
 }

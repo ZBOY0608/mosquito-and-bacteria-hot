@@ -139,10 +139,10 @@ export function HeatChart({ points: all }: { points: HeatPoint[] }) {
     <div>
       <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between">
         <dl className="grid grid-cols-3 gap-x-5 sm:flex sm:gap-x-10">
-          <Stat label="可比范围当前">
+          <Stat label="最新热度">
             <span className="mono text-[22px] font-semibold leading-none tracking-[-0.02em] text-ink">{Math.round(last.p!.heat)}</span>
           </Stat>
-          <Stat label="可比范围峰值">
+          <Stat label="峰值热度">
             <span className="mono text-[22px] font-semibold leading-none tracking-[-0.02em] text-ink">{Math.round(peak.p!.heat)}</span>
             <span className="num text-[12px] text-ink-4">{monthDayTime(new Date(peak.t).toISOString())}</span>
           </Stat>
@@ -246,7 +246,7 @@ export function HeatChart({ points: all }: { points: HeatPoint[] }) {
         })}
       </div>
       <p className="mt-4 text-[12px] leading-relaxed text-ink-4">
-        趋势仅比较持续完整观测到的相同主体，范围可能小于当前热度统计。移动指针或点击图表查看每小时热度；键盘可用左右方向键切换。
+        曲线按整点记录的热度绘制，未完整观测的小时断开而不按 0 处理，因此范围可能小于当前热度统计。移动指针或点击图表查看每小时热度；键盘可用左右方向键切换。
       </p>
     </div>
   );
