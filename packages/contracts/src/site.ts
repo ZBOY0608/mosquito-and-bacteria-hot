@@ -421,7 +421,12 @@ export interface ReportNavigationEntry { key: string; issueNumber: number; title
 
 // Topics
 
-export type TopicGroupKey = "company" | "field" | "genre";
+/**
+ * 主题分组的 key。分组由行业包（`industry/topics.json`）自己定义，框架不预设有哪些组——
+ * 上游的 company / field / genre 只是它那个行业的写法，本仓库是 pathogen / symbiont /
+ * transmission / prediction / control / setting / entity。
+ */
+export type TopicGroupKey = string;
 
 export interface TopicGroup {
   key: TopicGroupKey;

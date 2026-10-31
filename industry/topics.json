@@ -1,5 +1,5 @@
 {
-  "$comment": "主题页（/topics）的分组与定义。组不必等于轨道：病原体与地域是跨轨维度，五条轨是问题维度，两者正交。tags 里写的标签必须出现在 industry/taxonomy.ts 的 TOPIC_TAGS 中。",
+  "$comment": "主题页（/topics）的分组与定义。组不必等于轨道：病原体、机构与地域是跨轨维度，五条轨是问题维度，两者正交。普通主题的 tags 必须出现在 industry/taxonomy.ts 的 TOPIC_TAGS 中；机构主题用 entityId 指向 ENTITIES 的键，不要写 tags——归属由「是不是这篇报道的主体机构」判定，不是靠标题里提到。",
   "groups": [
     {
       "key": "pathogen",
@@ -30,6 +30,11 @@
       "key": "setting",
       "name": "地域与研究阶段",
       "blurb": "云南边境、东南亚，从体外到现场"
+    },
+    {
+      "key": "entity",
+      "name": "机构",
+      "blurb": "按机构追踪：世界蚊虫计划、WHO、CDC、云南省寄生虫病防治所这些团队最近报了什么"
     }
   ],
   "topics": [
@@ -37,211 +42,320 @@
       "slug": "dengue",
       "name": "登革",
       "group": "pathogen",
-      "tags": ["登革"],
+      "tags": [
+        "登革"
+      ],
       "definition": "登革病毒（DENV）的病毒学、四个血清型与致病机制，人群血清阳性率与暴发调查，临床分型与重症预警，诊断方法，疫苗与抗病毒进展，以及登革防控项目与建模研究的共同入口。"
     },
     {
       "slug": "zika",
       "name": "寨卡",
       "group": "pathogen",
-      "tags": ["寨卡"],
+      "tags": [
+        "寨卡"
+      ],
       "definition": "寨卡病毒（ZIKV）的传播与致病机制、先天性感染与小头症关联、血清学交叉反应与诊断、疫苗研发进展。"
     },
     {
       "slug": "chikungunya",
       "name": "基孔肯雅",
       "group": "pathogen",
-      "tags": ["基孔肯雅"],
+      "tags": [
+        "基孔肯雅"
+      ],
       "definition": "基孔肯雅病毒（CHIKV）的暴发与扩散、慢性关节炎等长期后遗症、媒介适应性突变（如 E1-A226V）、诊断与疫苗进展。"
     },
     {
       "slug": "yellow-fever",
       "name": "黄热",
       "group": "pathogen",
-      "tags": ["黄热"],
+      "tags": [
+        "黄热"
+      ],
       "definition": "黄热病毒（YFV）的流行态势、疫苗覆盖率与接种策略、丛林型与城市型传播循环，以及输入风险评估。"
     },
     {
       "slug": "jev",
       "name": "乙脑",
       "group": "pathogen",
-      "tags": ["乙脑"],
+      "tags": [
+        "乙脑"
+      ],
       "definition": "乙型脑炎病毒（JEV）的媒介与扩增宿主生态、疫苗免疫策略、临床特征与监测，中国的季节性流行规律。"
     },
     {
       "slug": "west-nile",
       "name": "西尼罗",
       "group": "pathogen",
-      "tags": ["西尼罗"],
+      "tags": [
+        "西尼罗"
+      ],
       "definition": "西尼罗病毒（WNV）的扩散与监测、鸟类扩增宿主与蚊媒关系、重症神经系统感染与后遗症。"
     },
     {
       "slug": "oropouche",
       "name": "奥罗普切",
       "group": "pathogen",
-      "tags": ["奥罗普切"],
+      "tags": [
+        "奥罗普切"
+      ],
       "definition": "奥罗普切病毒（OROV）的美洲暴发与扩散、蠓与库蚊媒介、临床表现与垂直传播证据、诊断可及性。"
     },
     {
       "slug": "wolbachia",
       "name": "沃尔巴克氏体",
       "group": "symbiont",
-      "tags": ["沃尔巴克氏体"],
+      "tags": [
+        "沃尔巴克氏体"
+      ],
       "definition": "沃尔巴克氏体的品系与传播动力学、人工转染到埃及伊蚊与白纹伊蚊、对病毒复制的抑制机制、现场释放后的人群替换与效果维持。"
     },
     {
       "slug": "other-symbionts",
       "name": "其他共生菌",
       "group": "symbiont",
-      "tags": ["其他共生菌"],
+      "tags": [
+        "其他共生菌"
+      ],
       "definition": "除沃尔巴克氏体以外的蚊虫共生菌：Asaia、Serratia-IS1、肠杆菌科等，以及工程化共生菌与 paratransgenesis 思路。"
     },
     {
       "slug": "microbiome",
       "name": "微生物组",
       "group": "symbiont",
-      "tags": ["微生物组", "菌群调查"],
+      "tags": [
+        "微生物组",
+        "菌群调查"
+      ],
       "definition": "蚊虫或非蚊媒虫种的菌群组成与影响因素：发育阶段、地理来源、血餐、杀虫剂暴露，以及菌群与病毒感染的关联。"
     },
     {
       "slug": "symbiont-virus",
       "name": "菌-病毒互作",
       "group": "symbiont",
-      "tags": ["菌-病毒互作"],
+      "tags": [
+        "菌-病毒互作"
+      ],
       "definition": "共生菌影响病毒感染的分子机制：免疫通路（如 IMD、JAK-STAT）、胆固醇与脂质代谢、活性氧、竞争性抑制，以及这些机制在不同蚊种与病毒上的可推广性。"
     },
     {
       "slug": "vector-competence",
       "name": "媒介能力",
       "group": "transmission",
-      "tags": ["媒介能力", "感染率", "播散率", "唾液腺感染"],
+      "tags": [
+        "媒介能力",
+        "感染率",
+        "播散率",
+        "唾液腺感染"
+      ],
       "definition": "蚊虫对病毒的易感性与传播能力：感染率、播散率、唾液腺感染率，中肠感染屏障与中肠逃逸屏障，以及蚊种、病毒株、温度对媒介能力的改变。"
     },
     {
       "slug": "eip",
       "name": "外潜伏期与病毒载量",
       "group": "transmission",
-      "tags": ["外潜伏期", "病毒载量"],
+      "tags": [
+        "外潜伏期",
+        "病毒载量"
+      ],
       "definition": "外潜伏期（EIP）与蚊体内病毒载量的量化：温度依赖关系、滴度动力学、对传播窗口与媒介效能的影响。"
     },
     {
       "slug": "vector-ecology",
       "name": "媒介生态与适合度",
       "group": "transmission",
-      "tags": ["血餐偏好", "寿命与适应性代价", "蚊虫行为", "种群动态"],
+      "tags": [
+        "血餐偏好",
+        "寿命与适应性代价",
+        "蚊虫行为",
+        "种群动态"
+      ],
       "definition": "决定传播的媒介性状：血餐偏好与宿主选择、寿命与存活曲线、生殖营养周期、适应性代价、蚊虫行为与种群动态、种群遗传结构。"
     },
     {
       "slug": "vector-species",
       "name": "媒介蚊种",
       "group": "transmission",
-      "tags": ["埃及伊蚊", "白纹伊蚊", "按蚊", "库蚊", "其他虫种"],
+      "tags": [
+        "埃及伊蚊",
+        "白纹伊蚊",
+        "按蚊",
+        "库蚊",
+        "其他虫种"
+      ],
       "definition": "埃及伊蚊、白纹伊蚊、按蚊、库蚊及其他虫媒的分布、扩散与竞争，各蚊种对不同虫媒病毒的传播作用，以及针对特定蚊种的防控意义。"
     },
     {
       "slug": "insecticide-resistance",
       "name": "杀虫剂抗性",
       "group": "transmission",
-      "tags": ["杀虫剂抗性"],
+      "tags": [
+        "杀虫剂抗性"
+      ],
       "definition": "蚊虫对菊酯类等杀虫剂的抗性水平与机制（靶标突变、代谢解毒）、抗性监测方法，以及抗性对常规防控效果与传播潜力的影响。"
     },
     {
       "slug": "epi-forecast",
       "name": "流行病学预测",
       "group": "prediction",
-      "tags": ["流行病学预测", "气候驱动"],
+      "tags": [
+        "流行病学预测",
+        "气候驱动"
+      ],
       "definition": "病例数与暴发的时序预测：气候与环境的驱动关系、季节性与年际变异、统计与机理模型、预报时效与外部验证。"
     },
     {
       "slug": "ml-warning",
       "name": "机器学习预警",
       "group": "prediction",
-      "tags": ["机器学习", "早期预警"],
+      "tags": [
+        "机器学习",
+        "早期预警"
+      ],
       "definition": "机器学习与深度学习在暴发预警中的应用：特征工程、多源数据融合、类别不平衡处理、外部验证与业务化落地，以及常见的数据泄漏问题。"
     },
     {
       "slug": "risk-mapping",
       "name": "风险制图与时空模型",
       "group": "prediction",
-      "tags": ["风险制图", "时空模型"],
+      "tags": [
+        "风险制图",
+        "时空模型"
+      ],
       "definition": "空间与时空维度的风险量化：适宜性制图、热点识别、空间自相关、贝叶斯层级模型与遥感协变量。"
     },
     {
       "slug": "transmission-dynamics",
       "name": "传播动力学",
       "group": "prediction",
-      "tags": ["传播动力学", "情景模拟"],
+      "tags": [
+        "传播动力学",
+        "情景模拟"
+      ],
       "definition": "R0 与媒介效能（vectorial capacity）的估算、房室模型与 Ross-Macdonald 框架、干预情景模拟（释放、疫苗、杀虫剂）的效果推演。"
     },
     {
       "slug": "clinical-warning",
       "name": "临床预警评分",
       "group": "prediction",
-      "tags": ["临床预警评分"],
+      "tags": [
+        "临床预警评分"
+      ],
       "definition": "登革等虫媒病的重症预测与预后模型：列线图、风险评分、机器学习分类器，以及这些模型的前瞻验证、校准度与临床可用性。"
     },
     {
       "slug": "molecular-prediction",
       "name": "分子与结构预测",
       "group": "prediction",
-      "tags": ["分子预测"],
+      "tags": [
+        "分子预测"
+      ],
       "definition": "计算层面的预测：蛋白结构预测、分子对接与虚拟筛选、适应性突变与抗性演化预测、抗原变异预测，以及这些预测的实验验证程度。"
     },
     {
       "slug": "iit",
       "name": "IIT 人群替换",
       "group": "control",
-      "tags": ["IIT人群替换"],
+      "tags": [
+        "IIT人群替换"
+      ],
       "definition": "昆虫不相容技术：释放携带沃尔巴克氏体的蚊虫实现人群替换，覆盖释放策略、规模、成本、效果维持、再入侵与社区接受度。"
     },
     {
       "slug": "sit-gene-drive",
       "name": "SIT 与基因驱动",
       "group": "control",
-      "tags": ["SIT", "基因驱动"],
+      "tags": [
+        "SIT",
+        "基因驱动"
+      ],
       "definition": "昆虫不育技术与基因驱动：辐照或基因手段致不育、雄蚊大规模生产与雌雄分离、释放比例与压制效果、驱动系统的传播效率与抗性演化风险。"
     },
     {
       "slug": "insecticide-application",
       "name": "杀虫剂应用",
       "group": "control",
-      "tags": ["杀虫剂应用"],
+      "tags": [
+        "杀虫剂应用"
+      ],
       "definition": "室内滞留喷洒、空间喷雾、幼虫杀灭剂与蚊帐等化学与物理防控手段的应用策略、效果评估与抗性管理。"
     },
     {
       "slug": "vaccine",
       "name": "疫苗与抗病毒",
       "group": "control",
-      "tags": ["疫苗", "抗病毒"],
+      "tags": [
+        "疫苗",
+        "抗病毒"
+      ],
       "definition": "登革、基孔肯雅、乙脑等疫苗的研发与临床试验（含失败与提前终止）、接种策略与群体效果、抗病毒药物与治疗性抗体。"
     },
     {
       "slug": "community-policy",
       "name": "社区干预与政策",
       "group": "control",
-      "tags": ["社区干预"],
+      "tags": [
+        "社区干预"
+      ],
       "definition": "社区参与、健康教育、孳生地清理与社会接受度研究，指南与政策文件、卫生经济与成本效果分析、监测体系与防控项目评估。"
     },
     {
       "slug": "yunnan",
       "name": "云南边境",
       "group": "setting",
-      "tags": ["云南", "西双版纳", "磨憨"],
+      "tags": [
+        "云南",
+        "西双版纳",
+        "磨憨"
+      ],
       "definition": "西双版纳、磨憨、瑞丽、河口等云南边境地区的蚊媒监测、共生菌调查、跨境输入风险与防控实践。"
     },
     {
       "slug": "southeast-asia",
       "name": "东南亚",
       "group": "setting",
-      "tags": ["东南亚"],
+      "tags": [
+        "东南亚"
+      ],
       "definition": "东南亚及周边热带地区的虫媒病毒流行、媒介生态与防控项目，与云南边境的联动关系。"
     },
     {
       "slug": "field",
       "name": "现场与半野外",
       "group": "setting",
-      "tags": ["现场", "半野外"],
+      "tags": [
+        "现场",
+        "半野外"
+      ],
       "definition": "在半野外设施或真实现场开展的研究与试验，区别于纯实验室条件下的结果。"
+    },
+    {
+      "slug": "wmp",
+      "name": "World Mosquito Program",
+      "group": "entity",
+      "entityId": "wmp",
+      "definition": "世界蚊虫计划（WMP）在印尼、越南、巴西等地释放带菌蚊的现场试验、效果与成本评估，以及它输出的方法与标准。"
+    },
+    {
+      "slug": "who",
+      "name": "WHO",
+      "group": "entity",
+      "entityId": "who",
+      "definition": "世界卫生组织的蚊媒病防控指南、风险评估、全球监测通报与消除目标进展。"
+    },
+    {
+      "slug": "cdc",
+      "name": "CDC",
+      "group": "entity",
+      "entityId": "cdc",
+      "definition": "美国疾控中心的本地传播监测、暴发通报、实验室诊断方法与旅行者提示。"
+    },
+    {
+      "slug": "yipd",
+      "name": "云南省寄生虫病防治所",
+      "group": "entity",
+      "entityId": "yipd",
+      "definition": "云南省寄生虫病防治所在云南边境（西双版纳、磨憨、瑞丽等）的蚊媒监测、共生菌调查与跨境输入风险研究。"
     }
   ]
 }
