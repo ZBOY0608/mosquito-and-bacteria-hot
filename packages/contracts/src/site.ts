@@ -166,6 +166,23 @@ export interface LiteratureMeta {
 }
 
 /**
+ * What the paper claims, as the selection read it: who was studied, what was done, what was found, and
+ * the sentence of the original that carries the finding, with the study design it was found under.
+ */
+export interface KeyFinding {
+  /** 研究对象: the cohort, model or system the work is about. */
+  subject: string | null;
+  /** 动作: investigated, measured, proposed… */
+  action: string | null;
+  /** 对象: the thing the action was applied to, or the conclusion itself. */
+  object: string | null;
+  /** The finding itself, quoted from the original (English). */
+  evidence: string | null;
+  /** The study design, each point also quoted from the original. */
+  conditions: Array<{ text: string; quote: string | null }>;
+}
+
+/**
  * An article page (/api/site/items/:id) in one language: Chinese (the article itself or its translation)
  * unless …/original asks for the original. Only the body shown is sent, with its outline.
  */
@@ -174,6 +191,8 @@ export interface SiteItemDetail extends ItemSummary {
   x: Omit<XPostView, "text" | "translation"> | null;
   /** A paper's own metadata: journal, authors, figures. Absent for news and posts. */
   literature?: LiteratureMeta | null;
+  /** The core claim and the sentences of the original behind it; null when the analysis carried no fact. */
+  keyFinding?: KeyFinding | null;
   /** Selected, but its fact's seat is held by this report: marked 同事件, without a reason of its own. */
   sameEvent?: { id: string; title: string } | null;
   readingMode: "full" | "summary-only";

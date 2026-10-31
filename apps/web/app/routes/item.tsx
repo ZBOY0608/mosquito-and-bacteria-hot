@@ -21,6 +21,7 @@ import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { ArticleBody } from "../features/item/ArticleBody";
 import { LiteratureAuthors, LiteratureFigures, LiteratureLine } from "../features/item/LiteratureMeta";
+import { KeyFinding } from "../features/item/KeyFinding";
 import { ActionsSheet, ReaderToolbar, type ActionRow } from "../features/item/ReaderTools";
 import { OutlineSheet } from "../components/ui/OutlineSheet";
 import { scrollToAnchor } from "../lib/motion";
@@ -511,6 +512,8 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
             </section>
           )}
+
+          {item.keyFinding && <KeyFinding finding={item.keyFinding} />}
 
           {item.literature && <LiteratureFigures figures={item.literature.figures} />}
 

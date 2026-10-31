@@ -1,9 +1,9 @@
 // Item detail and Markdown export, both behind the same visibility and licence rules.
-import type { LiteratureFigure, LiteratureMeta, OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
+import type { KeyFinding, LiteratureFigure, LiteratureMeta, OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
 import { ITEM_COPY, SITE } from "@aihot/site";
 import { bodyToMarkdown } from "../content/markdown.ts";
 import { sql } from "../db.ts";
-import { stripTagMarkup } from "../lib/text.ts";
+import { collapseWhitespace, stripTagMarkup } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import { exportTranslation, isChineseBody, ITEM_COLUMNS, ITEM_FROM, seatHolders, showsPost, toItemSummary, xView, type ItemRow } from "./items.ts";
@@ -14,6 +14,7 @@ import { topicLinks, topicMembership } from "./topics.ts";
 
 interface DetailRow extends ItemRow {
   raw: Record<string, any> | null;
+  fact: Record<string, any> | null;
   body_html: string | null;
   body_text: string | null;
   body_status: string;
@@ -42,11 +43,35 @@ function withOutline(html: string): { html: string; outline: OutlineEntry[] } {
 
 async function loadRow(id: string): Promise<DetailRow | null> {
   const [row] = await sql<DetailRow[]>`
-    SELECT ${ITEM_COLUMNS}, a.raw, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
+    SELECT ${ITEM_COLUMNS}, a.raw, an.output->'fact' AS fact, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
       ${topicMembership()} AS topics
     ${ITEM_FROM}
+    LEFT JOIN analyses an ON an.id = p.analysis_id
     WHERE p.article_id = ${id}`;
   return row ?? null;
+}
+
+/**
+ * What the paper claims, as the selection read it: who was studied, what was done (in Chinese), the
+ * finding itself quoted from the original, and the design it was found under. An analysis that carried no
+ * fact gets no card, and a field the model left out stays absent rather than being filled in.
+ */
+function keyFindingOf(fact: Record<string, any> | null): KeyFinding | null {
+  if (!fact || typeof fact !== "object") return null;
+  // The model's sentences sometimes keep a space before their final stop; a quote should read as text.
+  const text = (v: unknown): string | null =>
+    typeof v === "string" && v.trim() ? collapseWhitespace(v.trim()).replace(/\s+([,.;:!?])/g, "$1") : null;
+  const conditions = (Array.isArray(fact.conditions) ? fact.conditions : [])
+    .map((c: any) => ({ text: text(c?.text), quote: text(c?.quote) }))
+    .filter((c: { text: string | null }): c is { text: string; quote: string | null } => c.text !== null);
+  const finding: KeyFinding = {
+    subject: text(fact.subject),
+    action: text(fact.action),
+    object: text(fact.object),
+    evidence: text(fact.evidence),
+    conditions,
+  };
+  return finding.subject || finding.action || finding.object || finding.evidence ? finding : null;
 }
 
 /**
@@ -126,6 +151,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       x: null,
       readingMode: "summary-only",
       literature: literatureOf(row.raw),
+      keyFinding: keyFindingOf(row.fact),
       author: null,
       body: null,
       outline: [],
@@ -188,6 +214,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",
     literature: literatureOf(row.raw),
+    keyFinding: keyFindingOf(row.fact),
     author: row.author,
     body: reading.body,
     outline: reading.outline,
