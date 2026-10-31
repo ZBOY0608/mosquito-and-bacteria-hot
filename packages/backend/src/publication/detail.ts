@@ -1,5 +1,5 @@
 // Item detail and Markdown export, both behind the same visibility and licence rules.
-import type { OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
+import type { LiteratureFigure, LiteratureMeta, OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
 import { ITEM_COPY, SITE } from "@aihot/site";
 import { bodyToMarkdown } from "../content/markdown.ts";
 import { sql } from "../db.ts";
@@ -13,6 +13,7 @@ import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
 
 interface DetailRow extends ItemRow {
+  raw: Record<string, any> | null;
   body_html: string | null;
   body_text: string | null;
   body_status: string;
@@ -41,11 +42,43 @@ function withOutline(html: string): { html: string; outline: OutlineEntry[] } {
 
 async function loadRow(id: string): Promise<DetailRow | null> {
   const [row] = await sql<DetailRow[]>`
-    SELECT ${ITEM_COLUMNS}, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
+    SELECT ${ITEM_COLUMNS}, a.raw, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
       ${topicMembership()} AS topics
     ${ITEM_FROM}
     WHERE p.article_id = ${id}`;
   return row ?? null;
+}
+
+/**
+ * A paper's own metadata, as received at ingest. Only the fields a reader needs: the journal and where in
+ * it the paper sits, who wrote it and where the first author works, the identifiers, and the figures the
+ * open-access full text carries. Anything missing is simply absent, never invented.
+ */
+function literatureOf(raw: Record<string, any> | null): LiteratureMeta | null {
+  const lit = raw?.literature;
+  if (!lit || typeof lit !== "object") return null;
+  const name = (a: any) => [a?.firstName, a?.lastName].filter((x) => typeof x === "string" && x.trim()).join(" ").trim();
+  const authors = (Array.isArray(lit.authors) ? lit.authors : [])
+    .map((a: any) => ({ name: name(a), affiliation: typeof a?.affiliation === "string" && a.affiliation.trim() ? a.affiliation.trim() : null }))
+    .filter((a: { name: string }) => a.name);
+  const figures: LiteratureFigure[] = (Array.isArray(lit.figures) ? lit.figures : [])
+    .filter((f: any) => f && typeof f.caption === "string" && f.caption.trim())
+    .map((f: any) => ({ label: typeof f.label === "string" ? f.label.trim() || null : null, caption: f.caption.trim(), url: typeof f.url === "string" && f.url ? f.url : null, license: typeof f.license === "string" ? f.license : null }));
+  return {
+    journal: lit.journal || null,
+    journalAbbr: lit.journal_abbr || null,
+    doi: lit.doi || null,
+    pmid: lit.pmid || null,
+    pmcid: lit.pmcid || null,
+    volume: lit.volume || null,
+    issue: lit.issue || null,
+    pages: lit.pages || null,
+    publishedAt: lit.pubdate || null,
+    pubtypes: Array.isArray(lit.pubtypes) ? lit.pubtypes.filter((t: unknown) => typeof t === "string") : [],
+    isReview: !!lit.is_review,
+    authors,
+    figures,
+  };
 }
 
 /**
@@ -92,6 +125,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       tags: [],
       x: null,
       readingMode: "summary-only",
+      literature: literatureOf(row.raw),
       author: null,
       body: null,
       outline: [],
@@ -153,6 +187,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     x,
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",
+    literature: literatureOf(row.raw),
     author: row.author,
     body: reading.body,
     outline: reading.outline,

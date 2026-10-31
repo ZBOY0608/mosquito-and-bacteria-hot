@@ -130,6 +130,41 @@ export interface OutlineEntry {
   level: number;
 }
 
+/** One author of a paper, with the affiliation PubMed reports first for that author when it has one. */
+export interface LiteratureAuthor {
+  name: string;
+  affiliation: string | null;
+}
+
+/**
+ * A figure of the paper's open-access full text. `url` is the publisher-hosted image, hotlinked and never
+ * copied; it is null when the publisher's image URL cannot be derived, and the page then shows the caption
+ * alone. `license` is what the deposit says the figure may be reused under.
+ */
+export interface LiteratureFigure {
+  label: string | null;
+  caption: string;
+  url: string | null;
+  license: string | null;
+}
+
+/** What a paper's own metadata says, read from the raw deposit at ingest; null for anything not a paper. */
+export interface LiteratureMeta {
+  journal: string | null;
+  journalAbbr: string | null;
+  doi: string | null;
+  pmid: string | null;
+  pmcid: string | null;
+  volume: string | null;
+  issue: string | null;
+  pages: string | null;
+  publishedAt: string | null;
+  pubtypes: string[];
+  isReview: boolean;
+  authors: LiteratureAuthor[];
+  figures: LiteratureFigure[];
+}
+
 /**
  * An article page (/api/site/items/:id) in one language: Chinese (the article itself or its translation)
  * unless …/original asks for the original. Only the body shown is sent, with its outline.
@@ -137,6 +172,8 @@ export interface OutlineEntry {
 export interface SiteItemDetail extends ItemSummary {
   /** The post with all its media; its text is the body. */
   x: Omit<XPostView, "text" | "translation"> | null;
+  /** A paper's own metadata: journal, authors, figures. Absent for news and posts. */
+  literature?: LiteratureMeta | null;
   /** Selected, but its fact's seat is held by this report: marked 同事件, without a reason of its own. */
   sameEvent?: { id: string; title: string } | null;
   readingMode: "full" | "summary-only";

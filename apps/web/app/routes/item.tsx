@@ -20,6 +20,7 @@ import { StoryFollowups } from "../features/item/StoryFollowups";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { ArticleBody } from "../features/item/ArticleBody";
+import { LiteratureAuthors, LiteratureFigures, LiteratureLine } from "../features/item/LiteratureMeta";
 import { ActionsSheet, ReaderToolbar, type ActionRow } from "../features/item/ReaderTools";
 import { OutlineSheet } from "../components/ui/OutlineSheet";
 import { scrollToAnchor } from "../lib/motion";
@@ -143,14 +144,6 @@ function ArticleOutline({ outline }: { outline: SiteItemDetail["outline"] }) {
 /** WeChat's in-app browser cannot save downloads: there the Markdown is copied instead. */
 function inWeChat(): boolean {
   return typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent);
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
 }
 
 async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">): Promise<"shared" | "copied" | null> {
@@ -388,11 +381,15 @@ function ItemView({ item }: { item: SiteItemDetail }) {
   // Rails: the piece's facts on the left (wide screens), the editor's notes on the right, the outline
   // under the facts (or under the notes when only the right rail shows).
   const facts = (
+    <>
     <RailSection title="来源">
       <div className="text-[14px] font-semibold leading-snug text-ink">{isX ? item.x!.authorName : item.source.name}</div>
       <div className="mt-1 text-[12.5px] leading-relaxed text-ink-3">
-        {isX ? `@${item.x!.handle} · X` : item.author ?? hostOf(item.links.original)}
+        {isX ? `@${item.x!.handle} · X` : item.literature?.journal ?? item.author ?? null}
       </div>
+      <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12.5px] text-accent transition-colors hover:underline">
+        查看原文 <IconExternal size={12} />
+      </a>
       <div className="mt-3 text-[12px] text-ink-4">{timeLabel}</div>
       <time dateTime={shownAt} className="mono mt-0.5 block text-[12.5px] text-ink-2">
         {fullDateTime(shownAt)}
@@ -401,6 +398,12 @@ function ItemView({ item }: { item: SiteItemDetail }) {
         {relativeTime(shownAt)}
       </div>
     </RailSection>
+    {item.literature && item.literature.authors.length > 0 && (
+      <RailSection title="作者与单位" shrink>
+        <LiteratureAuthors authors={item.literature.authors} />
+      </RailSection>
+    )}
+    </>
   );
   const outline = showOutline && <ArticleOutline outline={item.outline} />;
   const notes = (
@@ -494,6 +497,13 @@ function ItemView({ item }: { item: SiteItemDetail }) {
           </div>
           {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]">{item.title}</h1>}
           {!isX && item.originalTitle && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>}
+          {!isX && item.literature && <LiteratureLine meta={item.literature} />}
+          {/* 左栏在 lg–2xl 之间是收起的（阅读布局），作者与单位在这里也放一份，保证中等宽度能看到。 */}
+          {!isX && item.literature && item.literature.authors.length > 0 && (
+            <div className="mt-2 2xl:hidden">
+              <LiteratureAuthors authors={item.literature.authors} />
+            </div>
+          )}
 
           {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
@@ -501,6 +511,8 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
             </section>
           )}
+
+          {item.literature && <LiteratureFigures figures={item.literature.figures} />}
 
           {item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
@@ -559,7 +571,10 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
               {isX ? item.x!.authorName : item.source.name}
             </a>
-            <span> · {hostOf(item.links.original)}</span>
+            <span> · </span>
+            <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 underline decoration-line-strong underline-offset-2 transition-colors hover:text-accent">
+              查看原文
+            </a>
           </p>
 
           {(item.topics.length > 0 || item.tags.length > 0) && (
