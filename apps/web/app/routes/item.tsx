@@ -22,6 +22,7 @@ import { QuotedPost } from "../features/item/QuotedPost";
 import { ArticleBody } from "../features/item/ArticleBody";
 import { LiteratureAuthors, LiteratureFigures, LiteratureLine } from "../features/item/LiteratureMeta";
 import { KeyFinding } from "../features/item/KeyFinding";
+import { AbstractBody } from "../features/item/AbstractBody";
 import { ActionsSheet, ReaderToolbar, type ActionRow } from "../features/item/ReaderTools";
 import { OutlineSheet } from "../components/ui/OutlineSheet";
 import { scrollToAnchor } from "../lib/motion";
@@ -307,7 +308,15 @@ function ItemView({ item }: { item: SiteItemDetail }) {
   };
 
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
-  const bodyLabel = !item.body ? null : lang === "zh" && item.body.zhKind === "translation" ? "正文 · AI 翻译" : lang === "original" ? "正文 · 原文" : "正文";
+  // A paper without a translation shows its abstract: the body is the deposit's own text.
+  const isAbstract = !!item.literature && !hasTranslation;
+  const bodyLabel = !item.body
+    ? null
+    : lang === "zh" && item.body.zhKind === "translation"
+      ? "正文 · AI 翻译"
+      : isAbstract
+        ? "原文摘要"
+        : lang === "original" ? "正文 · 原文" : "正文";
   const isX = item.channel === "x" && !!item.x;
   // Without a reliable date from the original, the time shown is when it was collected, labelled as such.
   const shownAt = item.publishedAt ?? item.discoveredAt;
@@ -562,7 +571,11 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               {hasTranslation && lang === "zh" && !item.body.complete && (
                 <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3">译文尚不完整，完整内容请切换到原文。</p>
               )}
-              <ArticleBody html={bodyHtml} />
+              {isAbstract ? (
+                <AbstractBody html={bodyHtml} long={bodyHtml.replace(/<[^>]*>/g, "").length > 2400} />
+              ) : (
+                <ArticleBody html={bodyHtml} />
+              )}
             </section>
           )}
 

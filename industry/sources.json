@@ -10,7 +10,7 @@
       "participation_mode": "editorial",
       "interval_minutes": 1440,
       "tags": ["文献", "外部推送"],
-      "site_fulltext": false,
+      "site_fulltext": true,
       "syndicate_fulltext": false
     },
     {
@@ -22,7 +22,7 @@
       "participation_mode": "editorial",
       "interval_minutes": 1440,
       "tags": ["文献", "外部推送"],
-      "site_fulltext": false,
+      "site_fulltext": true,
       "syndicate_fulltext": false
     },
     {
@@ -34,7 +34,7 @@
       "participation_mode": "editorial",
       "interval_minutes": 1440,
       "tags": ["文献", "外部推送"],
-      "site_fulltext": false,
+      "site_fulltext": true,
       "syndicate_fulltext": false
     },
     {
@@ -46,7 +46,7 @@
       "participation_mode": "editorial",
       "interval_minutes": 1440,
       "tags": ["文献", "外部推送"],
-      "site_fulltext": false,
+      "site_fulltext": true,
       "syndicate_fulltext": false
     },
     {
@@ -58,7 +58,7 @@
       "participation_mode": "editorial",
       "interval_minutes": 1440,
       "tags": ["文献", "外部推送"],
-      "site_fulltext": false,
+      "site_fulltext": true,
       "syndicate_fulltext": false
     },
     {
