@@ -12,6 +12,7 @@ import { itemUrl, siteUrl } from "./links.ts";
 import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
 import { relatedPapers } from "./related.ts";
+import { journalMetricsFor } from "./journal-metrics.ts";
 
 interface DetailRow extends ItemRow {
   raw: Record<string, any> | null;
@@ -88,7 +89,7 @@ function literatureOf(raw: Record<string, any> | null): LiteratureMeta | null {
     .map((a: any) => ({ name: name(a), affiliation: typeof a?.affiliation === "string" && a.affiliation.trim() ? a.affiliation.trim() : null }))
     .filter((a: { name: string }) => a.name);
   const figures: LiteratureFigure[] = (Array.isArray(lit.figures) ? lit.figures : [])
-    .filter((f: any) => f && typeof f.caption === "string" && f.caption.trim())
+    .filter((f: any) => f && typeof f.caption === "string" && f.caption.trim() && typeof f.url === "string" && f.url)
     .map((f: any) => ({ label: typeof f.label === "string" ? f.label.trim() || null : null, caption: f.caption.trim(), url: typeof f.url === "string" && f.url ? f.url : null, license: typeof f.license === "string" ? f.license : null }));
   return {
     journal: lit.journal || null,
@@ -102,6 +103,7 @@ function literatureOf(raw: Record<string, any> | null): LiteratureMeta | null {
     publishedAt: lit.pubdate || null,
     pubtypes: Array.isArray(lit.pubtypes) ? lit.pubtypes.filter((t: unknown) => typeof t === "string") : [],
     isReview: !!lit.is_review,
+    metrics: journalMetricsFor(lit.journal || null),
     authors,
     figures,
   };
