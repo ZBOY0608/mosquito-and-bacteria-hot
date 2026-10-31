@@ -11,6 +11,7 @@ import { publishArticle } from "@aihot/backend/publication/publish";
 import { dailyMetrics } from "@aihot/backend/reports/compose";
 import type { EditionEntry } from "@aihot/backend/reports/edition";
 import { QUEUES, getBoss, stopBoss } from "@aihot/backend/jobs/queue";
+import { RELEASE } from "@aihot/industry/taxonomy";
 
 after(async () => { await stopBoss(); await closeDb(); });
 
@@ -20,7 +21,11 @@ test("new models require a launch classification as well as an official, new mod
   const rows = [base, { ...base, tags: ["评测/基准"] }, { ...base, tags: ["方法与工具"] },
     { ...base, category: "transmission" }, { ...base, authority: 3 },
     { ...base, previous: { key: "2026-09-30", title: "已报过的发布" } }, { ...base, tags: [] }];
-  assert.equal(dailyMetrics(rows).modelsReleased, 1);
+  // RELEASE 是本行业的「最受关注的那类发布」。本仓库没有这样的类（RELEASE 为 null），
+  // dailyMetrics 就不产出 modelsReleased 这个字段，日报报头也不显示发布数；
+  // 将来把某类发布填进 RELEASE 时，这个断言自动回到「只算一条」。
+  if (RELEASE === null) assert.equal(dailyMetrics(rows).modelsReleased, undefined, "没有 RELEASE 时不产出发布数");
+  else assert.equal(dailyMetrics(rows).modelsReleased, 1);
   assert.equal(dailyMetrics(rows).totalEvents, 7);
 });
 

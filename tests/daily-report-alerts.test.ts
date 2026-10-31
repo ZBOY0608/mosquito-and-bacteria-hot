@@ -2,11 +2,21 @@ import "./setup.ts";
 import assert from "node:assert/strict";
 import { after, before, beforeEach, test } from "node:test";
 import { beijingAt } from "@aihot/contracts/time";
+import { EDITION_TIMES } from "@aihot/site";
 import { closeDb, sql } from "@aihot/backend/db";
 import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { checkAlerts, collectFindings } from "@aihot/backend/operations/alerts";
 
-const at = (date: string, time = "10:00") => beijingAt(date, time).getTime();
+/**
+ * 日报在计划出刊时间两小时后才算迟刊（operations/alerts.ts 的 overdue 判定），
+ * 所以这些用例的时刻都相对它取：默认正好压在线上，offsetMinutes 用于在线前后挪几分钟。
+ */
+const overdueClock = (offsetMinutes = 0): string => {
+  const [hours, minutes] = EDITION_TIMES.daily.split(":").map(Number);
+  const total = (hours ?? 0) * 60 + (minutes ?? 0) + 120 + offsetMinutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+const at = (date: string, time = overdueClock()) => beijingAt(date, time).getTime();
 const key = (date: string) => `report.daily:${date}`;
 const daily = (keys: string[]) => keys.filter(k => k.startsWith("report.daily"));
 async function report(date: string) {
@@ -30,18 +40,18 @@ test("midnight preserves a missing edition; each date recovers only when its rep
   result = await checkAlerts(at("2026-10-07"));
   assert.deepEqual(daily(result.open).sort(), [key("2026-10-06"), key("2026-10-07")]);
   await report("2026-10-07");
-  result = await checkAlerts(at("2026-10-07", "10:10"));
+  result = await checkAlerts(at("2026-10-07", overdueClock(10)));
   assert.deepEqual(daily(result.sent), [`${key("2026-10-07")}:recovered`]);
   assert.deepEqual(daily(result.open), [key("2026-10-06")]);
   await report("2026-10-06");
-  assert.deepEqual(daily((await checkAlerts(at("2026-10-07", "10:20"))).sent), [`${key("2026-10-06")}:recovered`]);
-  assert.deepEqual(daily((await checkAlerts(at("2026-10-07", "10:30"))).sent), []);
+  assert.deepEqual(daily((await checkAlerts(at("2026-10-07", overdueClock(20)))).sent), [`${key("2026-10-06")}:recovered`]);
+  assert.deepEqual(daily((await checkAlerts(at("2026-10-07", overdueClock(30)))).sent), []);
 });
 
 test("recent gap detection uses report activity and each edition's overdue time", async () => {
   await sql`INSERT INTO job_runs(job,started_at,status) VALUES('reports.compose',${new Date(at("2026-10-05"))},'failed')`;
   await report("2026-10-06");
-  const findings = await collectFindings(at("2026-10-07", "09:59"));
+  const findings = await collectFindings(at("2026-10-07", overdueClock(-1)));
   assert.deepEqual(daily(findings.map(f => f.key)), [key("2026-10-05")]);
   await report("2026-09-01");
   assert.deepEqual(daily((await collectFindings(at("2026-10-07"))).map(f => f.key)),
@@ -64,7 +74,7 @@ test("open dates outlive disabled generation and restarts keep checking missing 
   assert.deepEqual(result.sent, [], "rechecking after the restart does not duplicate the reminder");
   process.env.COLLECT_ENABLED = "false";
   await report("2026-10-01");
-  assert.ok((await checkAlerts(at("2026-10-07", "10:10"))).sent.includes(`${key("2026-10-01")}:recovered`));
+  assert.ok((await checkAlerts(at("2026-10-07", overdueClock(10)))).sent.includes(`${key("2026-10-01")}:recovered`));
 });
 
 test("an edition still missing past the scan window is closed once instead of reminded forever", async () => {
@@ -72,6 +82,6 @@ test("an edition still missing past the scan window is closed once instead of re
   let result = await checkAlerts(at("2026-10-08"));
   assert.ok(result.sent.includes(`${key("2026-10-01")}:expired`));
   assert.ok(!result.open.includes(key("2026-10-01")));
-  result = await checkAlerts(at("2026-10-08", "12:00"));
+  result = await checkAlerts(at("2026-10-08", overdueClock(60)));
   assert.ok(!result.sent.some(k => k.startsWith(key("2026-10-01"))));
 });
