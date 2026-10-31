@@ -75,7 +75,16 @@ jobs:
       # Each test file runs on its own copy of aihot_ci (tests/databases.ts), which the run migrates and
       # leaves empty; the smoke check then reads that empty database.
       - name: Backend tests
-        run: npm test
+        # 保留报告器输出：下面那一步据此把失败用例写成注解，红叉能自己说明是哪几条挂了，
+        # 不必再去下载 job 日志。
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee "$RUNNER_TEMP/backend-tests.log"
+      - name: Backend test failures
+        if: failure()
+        run: |
+          grep -E '^✖ ' "$RUNNER_TEMP/backend-tests.log" | sed 's/^/::error title=Backend test::/' | head -20 || true
+          grep -E '^ℹ (tests|pass|fail) ' "$RUNNER_TEMP/backend-tests.log" | sed 's/^/::notice title=Backend totals::/' || true
       - name: Smoke check of the built site
         # The site itself runs with collection and model calls off (the tests above use local stubs).
         env:
