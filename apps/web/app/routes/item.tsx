@@ -399,9 +399,6 @@ function ItemView({ item }: { item: SiteItemDetail }) {
       <div className="mt-1 text-[12.5px] leading-relaxed text-ink-3">
         {isX ? `@${item.x!.handle} · X` : item.literature?.journal ?? item.author ?? null}
       </div>
-      <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12.5px] text-accent transition-colors hover:underline">
-        查看原文 <IconExternal size={12} />
-      </a>
       <div className="mt-3 text-[12px] text-ink-4">{timeLabel}</div>
       <time dateTime={shownAt} className="mono mt-0.5 block text-[12.5px] text-ink-2">
         {fullDateTime(shownAt)}
@@ -598,14 +595,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
           <p className="mt-8 text-[13px] text-ink-4">
-            来源：
-            <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
-              {isX ? item.x!.authorName : item.source.name}
-            </a>
-            <span> · </span>
-            <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 underline decoration-line-strong underline-offset-2 transition-colors hover:text-accent">
-              查看原文
-            </a>
+            来源：{isX ? item.x!.authorName : item.source.name}
           </p>
 
           {(item.topics.length > 0 || item.tags.length > 0) && (

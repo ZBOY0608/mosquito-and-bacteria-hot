@@ -1,6 +1,7 @@
 // What a paper says about itself, next to the site's own reading of it: the journal and where the paper
 // sits in it, who wrote it and where the first author works, and the figures of the open-access full text.
-// Nothing here is generated: it is the deposit's own metadata, shown as received.
+// Nothing here is generated: it is the deposit's own metadata, shown as received. The identifiers and the
+// journal metrics are plain text on purpose — the one way out to the original is the top-right button.
 import type { LiteratureAuthor, LiteratureFigure, LiteratureMeta } from "@aihot/contracts/site";
 
 /** 综述 / 原始研究: the two things a reader of this site decides between at a glance. */
@@ -23,41 +24,29 @@ export function shortLicense(name: string): string {
   return `CC ${codes} ${m[2]}`;
 }
 
-const doiUrl = (doi: string) => `https://doi.org/${doi}`;
-const pmidUrl = (pmid: string) => `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
-
-/** The identifier links a reader needs to find the paper elsewhere; each opens in a new tab. */
+/** Identifiers as plain text: they identify, they are not doors out to the publisher. */
 export function LiteratureIds({ meta }: { meta: LiteratureMeta }) {
-  const link = "text-ink-3 underline decoration-line-strong underline-offset-2 transition-colors hover:text-accent";
   return (
     <>
-      {meta.doi && (
-        <a href={doiUrl(meta.doi)} target="_blank" rel="noopener noreferrer" className={link}>
-          DOI
-        </a>
-      )}
-      {meta.pmid && (
-        <a href={pmidUrl(meta.pmid)} target="_blank" rel="noopener noreferrer" className={link}>
-          PubMed
-        </a>
-      )}
-      {meta.pmcid && (
-        <a href={`https://europepmc.org/article/PMC/${meta.pmcid.replace(/^PMC/i, "")}`} target="_blank" rel="noopener noreferrer" className={link}>
-          PMC 全文
-        </a>
-      )}
+      {meta.doi && <span>DOI {meta.doi}</span>}
+      {meta.pmid && <span>PubMed {meta.pmid}</span>}
+      {meta.pmcid && <span>PMC {meta.pmcid.replace(/^PMC/i, "")}</span>}
     </>
   );
 }
 
-/** Journal, volume(issue):pages, paper type, identifiers: one line under the English title. */
+/** Journal, volume(issue):pages, paper type, metrics, identifiers: one line under the English title. */
 export function LiteratureLine({ meta }: { meta: LiteratureMeta }) {
   const place = [meta.volume ? `${meta.volume}${meta.issue ? `(${meta.issue})` : ""}` : "", meta.pages || ""].filter(Boolean).join(": ");
+  const metrics = meta.metrics ?? null;
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-relaxed text-ink-3">
       {meta.journal && <span className="font-medium text-ink-2">{meta.journal}</span>}
       {place && <span className="mono text-[12.5px]">· {place}</span>}
       <span>· {paperType(meta)}</span>
+      {metrics?.impactFactor && <span>· IF {metrics.impactFactor}</span>}
+      {metrics?.quartile && <span>· JCR {metrics.quartile}</span>}
+      {metrics?.source && <span className="text-[11.5px] text-ink-4">(数据来源：{metrics.source})</span>}
       <span className="flex items-center gap-2">
         <LiteratureIds meta={meta} />
       </span>
@@ -93,6 +82,7 @@ export function LiteratureAuthors({ authors }: { authors: LiteratureAuthor[] }) 
 /**
  * The figures of the open-access full text. The image is hotlinked from the publisher (never copied),
  * with its caption as deposited and the licence it came under, so the credit travels with the figure.
+ * Entries without a resolvable image never reach this component: a caption alone is not a figure.
  */
 export function LiteratureFigures({ figures }: { figures: LiteratureFigure[] }) {
   const shown = figures.slice(0, 4);
@@ -117,7 +107,6 @@ export function LiteratureFigures({ figures }: { figures: LiteratureFigure[] }) 
               {f.label && <span className="mr-1 font-semibold text-ink-2">{f.label}</span>}
               {f.caption}
               {f.url && f.license && <span className="ml-1 text-[11.5px] text-ink-4">（图源：原文 · {shortLicense(f.license)}）</span>}
-              {!f.url && <span className="ml-1 text-[11.5px] text-ink-4">（图片见原文）</span>}
             </figcaption>
           </figure>
         ))}
