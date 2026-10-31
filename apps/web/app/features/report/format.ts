@@ -125,7 +125,6 @@ const METRICS: Array<[key: string, unit: string]> = [
   ["totalEvents", ENTRIES_UNIT],
   ["totalStories", ENTRIES_UNIT],
   ["sourcesCount", UNITS.sourcesCount],
-  ["firstPartyEvents", UNITS.firstPartyEvents],
   ...(RELEASE ? [["modelsReleased", RELEASE.unit] as [string, string]] : []),
   ["selectedCount", UNITS.selectedCount],
   ["reportsCovered", UNITS.reportsCovered],
