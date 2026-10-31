@@ -161,6 +161,8 @@ export interface LiteratureMeta {
   publishedAt: string | null;
   pubtypes: string[];
   isReview: boolean;
+  /** Impact factor and JCR quartile from the operator's own metric table; null when unmatched or unconfigured. */
+  metrics?: { impactFactor: string | null; quartile: string | null; source: string | null } | null;
   authors: LiteratureAuthor[];
   figures: LiteratureFigure[];
 }
