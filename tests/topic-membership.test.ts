@@ -15,16 +15,23 @@ test("topic lists and pool counts share the exact membership predicate", async (
   const at = new Date("2026-01-01T00:00:00Z");
   const now = new Date(+at + 1000);
   const cases = [
-    { title: "", original: null, tags: ["Agent"], topics: ["agent"] },
-    { title: "Anthropic Agent", original: null, tags: [], topics: [] },
-    { title: "", original: null, tags: ["entity:wmp"], topics: ["anthropic"] },
-    { title: "Unrelated", original: null, tags: ["entity:wmp", "entity:wmp"], topics: [] },
-    { title: "Unrelated", original: "ANTHROPIC launches a model", tags: ["entity:wmp", "entity:wmp"], topics: ["anthropic"] },
-    { title: "Metadata", original: null, tags: ["entity:meta", "entity:wmp"], topics: [] },
-    { title: "发布Meta的新模型", original: null, tags: ["entity:meta", "entity:wmp"], topics: ["meta"] },
-    { title: "Unselected", original: null, tags: ["Agent", "entity:wmp"], topics: ["agent", "anthropic"], selected: false },
-    { title: "Withdrawn", original: null, tags: ["Agent", "entity:wmp"], topics: ["agent", "anthropic"], visibility: "withdrawn" },
-    { title: "Future", original: null, tags: ["Agent", "entity:wmp"], topics: ["agent", "anthropic"], future: true },
+    // A direction takes its tags and nothing else.
+    { title: "", original: null, tags: ["沃尔巴克氏体"], topics: ["wolbachia"] },
+    // Naming an organization in the title is not membership: the subject tag decides.
+    { title: "World Mosquito Program 与沃尔巴克氏体", original: null, tags: [], topics: [] },
+    // Its only subject organization: the title may leave it out.
+    { title: "", original: null, tags: ["entity:wmp"], topics: ["wmp"] },
+    // Two subject organizations and a title naming neither: in neither.
+    { title: "Unrelated", original: null, tags: ["entity:wmp", "entity:yipd"], topics: [] },
+    // Two subject organizations, the original title names one of them.
+    { title: "Unrelated", original: "WORLD MOSQUITO PROGRAM releases trial results", tags: ["entity:wmp", "entity:yipd"], topics: ["wmp"] },
+    // Latin names match as whole words: "Whose" is not WHO.
+    { title: "Whose data matters", original: null, tags: ["entity:who", "entity:yipd"], topics: [] },
+    // A Chinese title names it just as well.
+    { title: "云南省寄生虫病防治所公布监测结果", original: null, tags: ["entity:yipd", "entity:wmp"], topics: ["yipd"] },
+    { title: "Unselected", original: null, tags: ["沃尔巴克氏体", "entity:wmp"], topics: ["wolbachia", "wmp"], selected: false },
+    { title: "Withdrawn", original: null, tags: ["沃尔巴克氏体", "entity:wmp"], topics: ["wolbachia", "wmp"], visibility: "withdrawn" },
+    { title: "Future", original: null, tags: ["沃尔巴克氏体", "entity:wmp"], topics: ["wolbachia", "wmp"], future: true },
   ];
   await sql`INSERT INTO sources (id, name, kind, tier) VALUES (${prefix}, ${prefix}, 'rss', 'T1')`;
   for (const [i, row] of cases.entries()) {
@@ -36,7 +43,7 @@ test("topic lists and pool counts share the exact membership predicate", async (
       VALUES (${id}, ${prefix}, ${row.title}, ${row.original}, ${`https://example.org/${id}`}, ${at}, ${at},
         ${at}, ${row.future ? new Date(+now + 1) : at}, ${row.selected ?? true}, true, ${row.visibility ?? "public"}, 'news', ${row.tags})`;
   }
-  const topics = ["anthropic", "meta", "agent"].map(slug => findTopic(slug)!);
+  const topics = ["wmp", "yipd", "who", "wolbachia"].map(slug => findTopic(slug)!);
   const membership = new Map((await sql<{ id: string; topics: string[] }[]>`
     SELECT p.article_id AS id, ${topicMembership(topics)} AS topics FROM publications p WHERE p.source_id = ${prefix}`)
     .map(row => [row.id, row.topics]));

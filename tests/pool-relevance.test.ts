@@ -49,23 +49,23 @@ test("short and multi-term relevance keep cross-field AND and deterministic scor
   assert.deepEqual([beyond.items, beyond.total, beyond.pageCount], [[], 4, 1]);
 });
 
-test("company relevance retains tag-only candidates, boosts and unique totals", async () => {
-  await add("company-both", "openai", "openai", { title: "OpenAI", tags: ["entity:wmp"], age: 100 });
+test("an entity query retains tag-only candidates, boosts and unique totals", async () => {
+  await add("company-both", "wmp", "wmp", { title: "WMP", tags: ["entity:wmp"], age: 100 });
   await add("company-tag", "", "", { tags: ["entity:wmp"], noSearchRow: true, age: 1 });
-  await add("company-text", "openai qy", "openai", { title: "OpenAI", age: 60 });
-  await add("company-low", "openai", "", { age: 1 });
-  await add("company-withdrawn", "openai", "openai", { tags: ["entity:wmp"], visibility: "withdrawn" });
-  const company = await loadPool(query("OpenAI"));
+  await add("company-text", "wmp qy", "wmp", { title: "WMP", age: 60 });
+  await add("company-low", "wmp", "", { age: 1 });
+  await add("company-withdrawn", "wmp", "wmp", { tags: ["entity:wmp"], visibility: "withdrawn" });
+  const company = await loadPool(query("WMP"));
   assert.deepEqual(company.items.map(item => item.id), ["company-both", "company-tag", "company-text", "company-low"].map(id));
   assert.equal(company.total, 4, "the text-and-tag candidate counts once");
-  const multi = await loadPool(query("openai qy"));
-  assert.deepEqual(multi.items.map(item => item.id), [id("company-text")], "only the whole company alias expands the candidates");
+  const multi = await loadPool(query("wmp qy"));
+  assert.deepEqual(multi.items.map(item => item.id), [id("company-text")], "only the whole entity alias expands the candidates");
 });
 
 test("relevance retains combined filters and literal LIKE characters", async () => {
   await add("filtered", "uv", "uv", { channel: "x", category: "symbiont", tags: [T] });
   await add("wrong-channel", "uv", "uv", { category: "symbiont", tags: [T] });
-  await add("wrong-category", "uv", "uv", { channel: "x", tags: [T] });
+  await add("wrong-category", "uv", "uv", { channel: "x", category: "transmission", tags: [T] });
   await add("wrong-tag", "uv", "uv", { channel: "x", category: "symbiont" });
   const filtered = await loadPool({ ...query("uv"), channel: "x", category: "symbiont", tag: T });
   assert.deepEqual(filtered.items.map(item => item.id), [id("filtered")]);

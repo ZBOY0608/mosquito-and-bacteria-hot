@@ -44,10 +44,10 @@ async function source(suffix: string, tier: string, owner: string | null = null,
     VALUES (${id},${suffix},'rss',${tier},'editorial',${owner},${sql.json(role ? { publisherRole: role } : {})},${tier !== 'T1'},'2100-01-01')`;
   return id;
 }
-async function story(title = "OpenAI 发布 Dots") {
+async function story(title = "OpenAI 发布 Dots", subject = "OpenAI") {
   const [s] = await sql`INSERT INTO stories (public_id,title,first_report_at,latest_at,latest) VALUES (${randomUUID()},${title},${at(100)},${at(0)},'错误的生成进展') RETURNING id, public_id`;
   const [f] = await sql`INSERT INTO facts (public_id,story_id,title,subject,action,object,conditions)
-    VALUES (${`f-${randomUUID()}`},${s!.id},${title},'OpenAI','发布','Dots','自主执行任务消耗额度') RETURNING id, public_id`;
+    VALUES (${`f-${randomUUID()}`},${s!.id},${title},${subject},'发布','Dots','自主执行任务消耗额度') RETURNING id, public_id`;
   return { storyId: Number(s!.id), storyPublicId: s!.public_id as string, factId: Number(f!.id), factPublicId: f!.public_id as string };
 }
 async function report(sourceId: string, group: Awaited<ReturnType<typeof story>>, opts: { title: string; hours: number; selected?: boolean; score?: number; role?: string }) {
@@ -67,34 +67,34 @@ async function report(sourceId: string, group: Awaited<ReturnType<typeof story>>
 }
 
 test("source tier and event ownership are separate; mentions of an entity do not establish authority", () => {
-  const row = { body_mode: "full" as const, score: 70, timeline_at: now, source_tier: "T2", publisher_role: null, owner_entity_id: null, fact_subject: "OpenAI" };
-  const org = { ...row, source_tier: "T1_5", publisher_role: "organization", owner_entity_id: "openai", score: 60 };
+  const row = { body_mode: "full" as const, score: 70, timeline_at: now, source_tier: "T2", publisher_role: null, owner_entity_id: null, fact_subject: "World Mosquito Program" };
+  const org = { ...row, source_tier: "T1_5", publisher_role: "organization", owner_entity_id: "wmp", score: 60 };
   const person = { ...org, publisher_role: "person", score: 90 };
   assert.equal(pickRepresentative([person, org]), org);
   const first = { ...row, source_tier: "T1", score: 40, first_party: false };
   assert.equal(pickRepresentative([org, first]), first, "T1 does not depend on the first_party flag");
-  for (const subject of [null, "Databricks", "OpenAI合作伙伴", "Sam Altman (@sama)"]) {
+  for (const subject of [null, "Monash University", "WMP合作伙伴", "Maria Van Kerkhove (@mvankerkhove)"]) {
     assert.equal(representativePriority({ ...org, fact_subject: subject }), 3, String(subject));
   }
-  assert.equal(representativePriority({ ...org, fact_subject: "ChatGPT" }), 1, "exact configured product alias");
-  assert.equal(representativePriority({ ...org, fact_subject: "OpenAI / Anthropic" }), 1, "explicit co-subject list");
-  assert.equal(representativePriority({ ...org, owner_entity_id: "qwen", fact_subject: "Qwen Team" }), 1, "the company under another of its own names");
-  assert.equal(representativePriority({ ...org, owner_entity_id: "world-labs", fact_subject: "AMD + World Labs" }), 1);
-  assert.equal(representativePriority({ ...org, owner_entity_id: "xai", fact_subject: "SpaceXSI" }), 1, "xAI after its rename to SpaceX Super Intelligence");
-  assert.equal(representativePriority({ ...org, owner_entity_id: "xai", fact_subject: "Grok Bot" }), 1, "xAI's agent product");
-  assert.equal(representativePriority({ ...org, owner_entity_id: "meta", fact_subject: "Muse" }), 1, "Meta's agent product");
-  assert.equal(representativePriority({ ...org, fact_subject: "OpenAI + " }), 3, "incomplete subject list is not evidence");
+  assert.equal(representativePriority({ ...org, fact_subject: "Eliminate Dengue" }), 1, "another of the organization's own names");
+  assert.equal(representativePriority({ ...org, fact_subject: "World Mosquito Program / Monash University" }), 1, "explicit co-subject list");
+  assert.equal(representativePriority({ ...org, owner_entity_id: "yipd", fact_subject: "YIPD" }), 1, "the organization under its short name");
+  assert.equal(representativePriority({ ...org, owner_entity_id: "who", fact_subject: "世界卫生组织" }), 1, "the Chinese name of the same organization");
+  assert.equal(representativePriority({ ...org, owner_entity_id: "cdc", fact_subject: "US CDC + PAHO" }), 1);
+  assert.equal(representativePriority({ ...org, owner_entity_id: "paho", fact_subject: "Organización Panamericana de la Salud" }), 1, "the Spanish name of the same organization");
+  assert.equal(representativePriority({ ...org, owner_entity_id: "fiocruz", fact_subject: "Oswaldo Cruz Foundation" }), 1, "the English name of a Portuguese-named organization");
+  assert.equal(representativePriority({ ...org, fact_subject: "WMP + " }), 3, "incomplete subject list is not evidence");
   assert.equal(representativePriority({ ...org, owner_entity_id: null }), 3);
   assert.equal(representativePriority({ ...org, owner_entity_id: "unregistered-org", fact_subject: "unregistered-org" }), 3, "equal unknown strings are not verified identity");
-  assert.equal(representativePriority({ ...org, fact_subject: "OpenAI + unregistered-org" }), 3, "an unrecognized co-subject is not silently accepted");
+  assert.equal(representativePriority({ ...org, fact_subject: "WMP + unregistered-org" }), 3, "an unrecognized co-subject is not silently accepted");
   assert.equal(representativePriority({ ...row, first_party: true } as typeof row), 3, "the first_party flag never elevates a source");
 });
 
 test("mentions cannot choose a timeline origin, anchor, representative, or a latest-progress link", async () => {
-  const organization = await source("organization", "T1_5", "openai", "organization");
+  const organization = await source("organization", "T1_5", "wmp", "organization");
   const media = await source("media", "T2");
   const t1 = await source("t1", "T1");
-  const g = await story();
+  const g = await story("World Mosquito Program 发布 Dots", "World Mosquito Program");
   const official = await report(organization, g, { title: "Dots 正式发布", hours: 3, score: 65 });
   const latest = await report(media, g, { title: "Dots 后续更新", hours: 2, score: 90 });
   const earlyMention = await report(t1, g, { title: "EARLY ROUNDUP", hours: 90, role: "mention" });

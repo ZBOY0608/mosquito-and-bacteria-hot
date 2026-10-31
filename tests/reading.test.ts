@@ -65,23 +65,23 @@ test("a folded card's other sources are those of the fact its representative rep
   assert.equal(card.group?.additionalSourceCount, 1, "the launch's other source, not the leak's");
 });
 
-test("a query that names a company also finds the articles about it", async () => {
-  const about = await report(MEDIA, { selected: false, hoursAgo: 3, subjects: ["anthropic"], title: `Sonnet 上线 Conductor ${T}` });
-  const mention = await report(MEDIA, { selected: false, hoursAgo: 4, title: `claude 被一篇盘点顺带提到 ${T}` });
+test("a query that names an organization also finds the articles about it", async () => {
+  const about = await report(MEDIA, { selected: false, hoursAgo: 3, subjects: ["cdc"], title: `秘鲁的监测结果 ${T}` });
+  const mention = await report(MEDIA, { selected: false, hoursAgo: 4, title: `CDC 被一篇盘点顺带提到 ${T}` });
   const other = await report(MEDIA, { selected: false, hoursAgo: 5, title: `无关的新闻 ${T}` });
   for (const id of [about, mention, other]) await publishArticle(id);
   const search = async (q: string, tab = "") => {
     const res = await app.inject({ method: "GET", url: `/api/site/pool?q=${encodeURIComponent(q)}${tab}` });
     return (JSON.parse(res.body).items as Array<{ id: string }>).map((i) => i.id);
   };
-  const latest = await search("Claude");
-  assert.ok(latest.includes(about), "the Anthropic subject without the word");
+  const latest = await search("CDC");
+  assert.ok(latest.includes(about), "the CDC subject without the word");
   assert.ok(latest.includes(mention), "text matches stay");
   assert.ok(!latest.includes(other));
-  const relevance = await search("claude", "&tab=relevance");
+  const relevance = await search("cdc", "&tab=relevance");
   assert.ok(relevance.indexOf(about) >= 0 && relevance.indexOf(about) < relevance.indexOf(mention), "the subject ranks first");
-  // Only the whole query names the company: a narrower search stays a text search.
-  assert.ok(!(await search(`claude ${T}-nothing`)).includes(about));
+  // Only the whole query names the organization: a narrower search stays a text search.
+  assert.ok(!(await search(`cdc ${T}-nothing`)).includes(about));
 });
 
 test("bare addresses in post text become safe links", () => {
