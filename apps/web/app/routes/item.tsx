@@ -23,6 +23,7 @@ import { ArticleBody } from "../features/item/ArticleBody";
 import { LiteratureAuthors, LiteratureFigures, LiteratureLine } from "../features/item/LiteratureMeta";
 import { KeyFinding } from "../features/item/KeyFinding";
 import { AbstractBody } from "../features/item/AbstractBody";
+import { RelatedPapers } from "../features/item/RelatedPapers";
 import { ActionsSheet, ReaderToolbar, type ActionRow } from "../features/item/ReaderTools";
 import { OutlineSheet } from "../components/ui/OutlineSheet";
 import { scrollToAnchor } from "../lib/motion";
@@ -310,6 +311,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
   // A paper without a translation shows its abstract: the body is the deposit's own text.
   const isAbstract = !!item.literature && !hasTranslation;
+  const relatedPapers = item.relatedPapers ?? [];
   const bodyLabel = !item.body
     ? null
     : lang === "zh" && item.body.zhKind === "translation"
@@ -448,6 +450,11 @@ function ItemView({ item }: { item: SiteItemDetail }) {
           </div>
         </RailSection>
       )}
+      {relatedPapers.length > 0 && (
+        <RailSection title="相关文献">
+          <RelatedPapers papers={relatedPapers} />
+        </RailSection>
+      )}
     </>
   );
 
@@ -576,6 +583,14 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               ) : (
                 <ArticleBody html={bodyHtml} />
               )}
+            </section>
+          )}
+
+          {/* 手机上没有右栏：相关文献落在正文之后。 */}
+          {relatedPapers.length > 0 && (
+            <section className="mt-9 border-t border-line pt-4 lg:hidden">
+              <div className="mb-3 text-[12px] font-semibold text-accent">相关文献</div>
+              <RelatedPapers papers={relatedPapers} />
             </section>
           )}
 

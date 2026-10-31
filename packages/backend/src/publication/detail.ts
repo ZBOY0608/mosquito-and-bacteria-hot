@@ -11,6 +11,7 @@ import { evidenceCondition, listedCondition } from "./scope.ts";
 import { itemUrl, siteUrl } from "./links.ts";
 import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
+import { relatedPapers } from "./related.ts";
 
 interface DetailRow extends ItemRow {
   raw: Record<string, any> | null;
@@ -210,6 +211,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   // The reason goes with the seat; a report yielding it points to the one holding it.
   const sameEvent = (await seatHolders([row], now)).get(row.id) ?? null;
+  const papers = await relatedPapers(row.id);
   const item: SiteItemDetail = {
     ...summary,
     x,
@@ -225,6 +227,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     indexable: row.indexable,
     markdownAvailable: markdownAvailable(row),
     group,
+    ...(papers.length > 0 ? { relatedPapers: papers } : {}),
     hasTranslation: reading.hasTranslation,
     bodyLanguage: reading.bodyLanguage,
   };

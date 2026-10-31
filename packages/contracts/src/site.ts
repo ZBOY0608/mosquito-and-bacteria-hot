@@ -182,6 +182,14 @@ export interface KeyFinding {
   conditions: Array<{ text: string; quote: string | null }>;
 }
 
+/** Another paper close to this one by meaning, inside the same track. */
+export interface RelatedPaper {
+  id: string;
+  title: string;
+  journal: string | null;
+  score: number | null;
+}
+
 /**
  * An article page (/api/site/items/:id) in one language: Chinese (the article itself or its translation)
  * unless …/original asks for the original. Only the body shown is sent, with its outline.
@@ -193,6 +201,8 @@ export interface SiteItemDetail extends ItemSummary {
   literature?: LiteratureMeta | null;
   /** The core claim and the sentences of the original behind it; null when the analysis carried no fact. */
   keyFinding?: KeyFinding | null;
+  /** Up to three papers of the same track nearest by meaning; absent when this one has no embedding. */
+  relatedPapers?: RelatedPaper[];
   /** Selected, but its fact's seat is held by this report: marked 同事件, without a reason of its own. */
   sameEvent?: { id: string; title: string } | null;
   readingMode: "full" | "summary-only";
