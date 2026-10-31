@@ -22,7 +22,7 @@
 
 站点自己的东西在 `site/`：站名文案（`site.ts`）、每一步用哪个模型（`models.ts`）、品牌（`brand/`）、条款页（`pages/`）。
 
-**判轨的核心在 `prompts/structure.md`**：它是四问决策树，第一个问题是「主要产出是不是一个模型」。这条不能挪位置——模型类论文一旦成立第一问，后面每个问题都会答"是"，必须先截断。综述与 Meta 分析不成立第一问。
+**判轨的核心在 `prompts/structure.md`**：它是五问决策树，第一个问题是「主要产出是不是一个模型」。这条不能挪位置——模型类论文一旦成立第一问，后面每个问题都会答"是"，必须先截断。综述与 Meta 分析不成立第一问。
 
 这些事要问使用者本人，不要替他决定：站名；盯哪些信源；什么研究重要、什么是噪声；门槛数字；条款与隐私说明（`site/pages/` 是模板，上线前需本人确认）。
 
@@ -35,11 +35,17 @@
 - 改完至少跑：
   ```bash
   npm run typecheck
-  DATABASE_URL=postgres://127.0.0.1:5432/<名字>_test npm test   # 名字必须以 _test 或 _ci 结尾；没有会自动建好并迁移
   npm run build -w @aihot/web && node --test apps/web/tests/*.test.ts
   node scripts/smoke.ts --base http://localhost:3000             # 站点跑起来以后
   ```
-- **跑完测试记得清库**：每个测试文件会建一个独立数据库副本，跑几次就上百个。PostgreSQL 启动时要逐库 fsync，库多了会把启动拖到十几分钟。用 `D:\devstack\cleanup-test-dbs.ps1` 清掉。
+- **后端测试本机只跑单个文件，不要跑全量 `npm test`。** 每个测试文件都会建一个独立数据库副本，全量一次就是上百个；PostgreSQL 启动时要逐库 fsync，会把启动拖到十几分钟，同时把连接池吃干（2026-10-30 因为这个原因连续卡死过两次）。单文件这样跑：
+  ```bash
+  DATABASE_URL=postgres://127.0.0.1:5432/<名字>_test \
+    node --test-global-setup=tests/databases.ts --import ./tests/databases.ts \
+    --test --test-timeout=120000 tests/topics.test.ts
+  ```
+  全量交给 GitHub Actions 的 `Check`（`check` job 的 Backend tests 步骤），本机不用复现。
+- **跑完测试记得清库**：单文件跑几次也会攒出几十个副本。用 `D:\devstack\cleanup-test-dbs.ps1` 清掉，别让它们在下次启动时被 fsync。
 - `react-router typegen` 会清理旧类型目录，若被删除拦截挡住，先 `rm -rf apps/web/.react-router-types` 再跑 typecheck，否则 `params.id` 会被推断成 optional，报一堆假错。
 - 改了 `site/site.ts` 的文案后必须 `npm run build -w @aihot/web` 并重启 web，否则页面还是旧的。
 

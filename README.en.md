@@ -26,7 +26,7 @@ The output is meant to be read by both people and agents: website, per-category 
 
 ## The five tracks
 
-Categories are split by **what question a study answers**, not by topic. The routing rule lives in `industry/prompts/structure.md` and is a four-question decision tree rather than keyword matching.
+Categories are split by **what question a study answers**, not by topic. The routing rule lives in `industry/prompts/structure.md` and is a five-question decision tree rather than keyword matching.
 
 | Track | key | Question | Holds |
 |---|---|---|---|
