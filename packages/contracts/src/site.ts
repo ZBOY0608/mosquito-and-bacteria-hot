@@ -277,6 +277,36 @@ export interface HotResponse {
   entries: HotEntryView[];
 }
 
+/**
+ * 近 7 天的文献热度:一个文献站没有"讨论热度"(一篇论文只有一个来源),榜单给的是它真实有的——
+ * 每条轨道收了多少、平均什么水平,以及评分最高的一批文献。
+ */
+export interface TrackHeat {
+  key: string | null;
+  label: string;
+  count: number;
+  avgScore: number | null;
+  top: { itemId: string; title: string; score: number } | null;
+}
+
+export interface PaperHeat {
+  itemId: string;
+  title: string;
+  summary: string | null;
+  score: number;
+  category: string | null;
+  categoryLabel: string;
+  sourceName: string;
+  at: string;
+}
+
+export interface Hot7Response {
+  days: number;
+  computedAt: string;
+  tracks: TrackHeat[];
+  papers: PaperHeat[];
+}
+
 export interface HeatPoint {
   hour: string;
   heat: number;

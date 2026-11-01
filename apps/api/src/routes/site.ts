@@ -17,6 +17,7 @@ import { itemAvailability } from "@aihot/backend/publication/availability";
 import { listTopicSummaries, loadTopicPage, topicBrowseLinks } from "@aihot/backend/publication/topics";
 import { registerFeedback } from "./feedback.ts";
 import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
+import { sevenDayHeatCached } from "@aihot/backend/publication/hot7";
 import { listReports, loadReport, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
 import { looseQuery, QueryError, sendJsonWithEtag, sendProblem } from "../http/respond.ts";
 
@@ -153,6 +154,11 @@ export function registerSite(app: FastifyInstance) {
   app.get("/api/site/hot", siteHandler(async (req, reply) => {
     const data = await loadHot();
     return sendJsonWithEtag(req, reply, data, { etagPrefix: "hot", cacheControl: "public, max-age=30, s-maxage=30" });
+  }));
+
+  app.get("/api/site/hot7", siteHandler(async (req, reply) => {
+    const data = await sevenDayHeatCached();
+    return sendJsonWithEtag(req, reply, data, { etagPrefix: "hot7", cacheControl: "public, max-age=600, s-maxage=600" });
   }));
 
   app.get("/api/site/stories/:publicId", siteHandler(async (req, reply) => {
