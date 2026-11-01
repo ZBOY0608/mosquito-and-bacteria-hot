@@ -17,7 +17,7 @@ import { itemAvailability } from "@aihot/backend/publication/availability";
 import { listTopicSummaries, loadTopicPage, topicBrowseLinks } from "@aihot/backend/publication/topics";
 import { registerFeedback } from "./feedback.ts";
 import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
-import { sevenDayHeatCached } from "@aihot/backend/publication/hot7";
+import { frontierBoardCached, trackPapers } from "@aihot/backend/publication/hot7";
 import { listReports, loadReport, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
 import { looseQuery, QueryError, sendJsonWithEtag, sendProblem } from "../http/respond.ts";
 
@@ -157,8 +157,17 @@ export function registerSite(app: FastifyInstance) {
   }));
 
   app.get("/api/site/hot7", siteHandler(async (req, reply) => {
-    const data = await sevenDayHeatCached();
-    return sendJsonWithEtag(req, reply, data, { etagPrefix: "hot7", cacheControl: "public, max-age=600, s-maxage=600" });
+    const data = await frontierBoardCached();
+    return sendJsonWithEtag(req, reply, { ...data, papers: data.papers.slice(0, 20) }, { etagPrefix: "hot7", cacheControl: "public, max-age=600, s-maxage=600" });
+  }));
+
+  app.get("/api/site/track/:key", siteHandler(async (req, reply) => {
+    const raw = (req.params as { key: string }).key;
+    if (!/^[a-z_-]{1,40}$/.test(raw)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "track not found" });
+    const key = raw === "other" ? null : raw;
+    const data = await trackPapers(key);
+    if (!data) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "track not found", cacheControl: "public, max-age=60" });
+    return sendJsonWithEtag(req, reply, data, { etagPrefix: "track", cacheControl: "public, max-age=600, s-maxage=600" });
   }));
 
   app.get("/api/site/stories/:publicId", siteHandler(async (req, reply) => {

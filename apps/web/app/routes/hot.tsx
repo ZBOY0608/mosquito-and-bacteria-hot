@@ -1,6 +1,6 @@
 import { useLoaderData } from "react-router";
 import { IntentLink } from "../components/ui/IntentLink";
-import type { Hot7Response, PaperHeat, TrackHeat } from "@aihot/contracts/site";
+import type { FrontierBoardResponse, PaperHeat, TrackHeat } from "@aihot/contracts/site";
 import { withSubject } from "@aihot/site";
 import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
@@ -19,7 +19,7 @@ export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 export async function loader({ request }: { request: Request }) {
-  return cachedPage(600, { hot: await apiGet<Hot7Response>("/api/site/hot7", { signal: request.signal }) });
+  return cachedPage(600, { hot: await apiGet<FrontierBoardResponse>("/api/site/hot7", { signal: request.signal }) });
 }
 
 export function meta() {
@@ -144,32 +144,46 @@ export default function HotPage() {
         )}
       </header>
 
-      {hot.papers.length === 0 ? (
+      {hot.tracks.length === 0 ? (
         <div className="card rounded-sheet">
-          <EmptyState title="近一年还没有收录">站点恢复收录后，这里会排出每条轨道最前沿的研究。</EmptyState>
+          <EmptyState title="近一年还没有收录">站点恢复收录后，这里会按轨道排出最前沿的研究。</EmptyState>
         </div>
       ) : (
-        <>
-          {hot.tracks.length > 0 && (
-            <section aria-label="轨道热度" className="grid grid-cols-1 gap-3 @[760px]:grid-cols-2 @[1040px]:grid-cols-3">
-              {hot.tracks.map((t) => (
-                <TrackCard key={t.key ?? "other"} t={t} />
-              ))}
-            </section>
-          )}
-
-          <section aria-label="前沿文献榜" className="mt-7">
-            <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="text-[15px] font-semibold text-ink">前沿文献榜</h2>
-              <span className="hidden text-[12px] text-ink-4 lg:block">近一年 · 期刊质量加权 + AI 评分</span>
-            </div>
-            <ol className="card divide-y divide-line-soft overflow-hidden">
-              {hot.papers.map((p, i) => (
-                <PaperRow key={p.itemId} p={p} rank={i + 1} />
-              ))}
-            </ol>
-          </section>
-        </>
+        <section aria-label="轨道分组" className="grid grid-cols-1 gap-4 @[900px]:grid-cols-2 @[1300px]:grid-cols-3">
+          {hot.tracks.map((t) => {
+            const key = t.key ?? "other";
+            return (
+              <IntentLink
+                key={t.key ?? "other"}
+                viewTransition
+                to={`/track/${key}`}
+                className="card card-hover group flex flex-col p-5"
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="text-[16px] font-bold text-ink transition-colors group-hover:text-accent">{t.label}</h2>
+                  <span className="num shrink-0 text-[12.5px] text-ink-4">{t.count} 篇</span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-4">
+                  {t.selectedCount > 0 && <span>精选 {t.selectedCount}</span>}
+                  <span>
+                    精读 <span className="num">{t.deepReadCount}</span>/{t.count}
+                  </span>
+                </div>
+                {t.top && (
+                  <p className="mt-3 border-t border-line pt-3 text-[13.5px] leading-[1.6] text-ink-2">
+                    {t.top.quartile && t.top.impactFactor && (
+                      <span className="num mr-1.5 whitespace-nowrap text-[11.5px] font-semibold text-accent">
+                        {t.top.quartile}/{t.top.impactFactor}
+                      </span>
+                    )}
+                    {t.top.journal && <span className="mr-1.5 whitespace-nowrap text-[11.5px] text-ink-4">{t.top.journal}</span>}
+                    <span className="line-clamp-2">{t.top.title}</span>
+                  </p>
+                )}
+              </IntentLink>
+            );
+          })}
+        </section>
       )}
 
       <details id="hot-method" className="disclosure group/method mt-8 scroll-mt-[calc(var(--bar-h)+16px)] text-[12px] text-ink-4">

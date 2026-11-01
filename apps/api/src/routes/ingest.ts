@@ -5,6 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { credential } from "@aihot/backend/config";
 import { IngestError, ingestItems } from "@aihot/backend/ingest/items";
+import { ingestDeepReads } from "@aihot/backend/ingest/deepreads";
 
 const PLACEHOLDER = /^(|changeme|change-me|placeholder|xxx+|todo|test|dev|your[-_]?token.*)$/i;
 
@@ -44,6 +45,22 @@ export function registerIngest(app: FastifyInstance) {
     } catch (error) {
       if (error instanceof IngestError) return reply.code(error.status).send({ ok: false, error: error.message });
       req.log.error({ err: error }, "ingest items failed");
+      return reply.code(500).send({ ok: false, error: "internal error" });
+    }
+  });
+
+  // Operator-generated deep readings (目的/方法/创新性/结果) for already-published papers. Generation
+  // happens outside the site; this only stores what came in. Unknown article ids are reported, never
+  // silently dropped; re-pushing a paper overwrites its previous reading (idempotent).
+  app.post("/api/ingest/deepreads", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    if (!authorized(req)) return unauthorized(reply);
+    if (RATE_LIMIT > 0 && limited(`deepreads:${req.ip}`, RATE_LIMIT)) return reply.code(429).header("Retry-After", "60").send({ ok: false, error: "rate limited" });
+    try {
+      return await ingestDeepReads((req.body ?? {}) as never);
+    } catch (error) {
+      if (error instanceof IngestError) return reply.code(error.status).send({ ok: false, error: error.message });
+      req.log.error({ err: error }, "ingest deepreads failed");
       return reply.code(500).send({ ok: false, error: "internal error" });
     }
   });

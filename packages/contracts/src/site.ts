@@ -186,6 +186,17 @@ export interface KeyFinding {
   conditions: Array<{ text: string; quote: string | null }>;
 }
 
+/**
+ * The operator's structured deep reading of a paper: 研究目的、方法、创新性、主要结果, each one or two
+ * sentences in Chinese with key terms in the original language. Produced outside the site and imported.
+ */
+export interface DeepRead {
+  objective: string | null;
+  methods: string | null;
+  novelty: string | null;
+  results: string | null;
+}
+
 /** Another paper close to this one by meaning, inside the same track. */
 export interface RelatedPaper {
   id: string;
@@ -205,6 +216,8 @@ export interface SiteItemDetail extends ItemSummary {
   literature?: LiteratureMeta | null;
   /** The core claim and the sentences of the original behind it; null when the analysis carried no fact. */
   keyFinding?: KeyFinding | null;
+  /** The operator's structured deep reading; null when not yet generated for this paper. */
+  deepRead?: DeepRead | null;
   /** Up to three papers of the same track nearest by meaning; absent when this one has no embedding. */
   relatedPapers?: RelatedPaper[];
   /** Selected, but its fact's seat is held by this report: marked 同事件, without a reason of its own. */
@@ -287,9 +300,11 @@ export interface TrackHeat {
   key: string | null;
   label: string;
   count: number;
-  /** How many of the week's items cleared the selection line. */
+  /** How many of the year's items cleared the selection line. */
   selectedCount: number;
-  /** The week's paper in the highest-impact journal (by the operator's metric table), tie by score. */
+  /** How many of the year's items carry a generated deep reading. */
+  deepReadCount: number;
+  /** The year's paper in the highest-impact journal (by the operator's metric table), tie by score. */
   top: { itemId: string; title: string; journal: string | null; quartile: string | null; impactFactor: string | null } | null;
 }
 
@@ -308,11 +323,21 @@ export interface PaperHeat {
   at: string;
 }
 
-export interface Hot7Response {
+export interface FrontierBoardResponse {
   days: number;
   computedAt: string;
   tracks: TrackHeat[];
   papers: PaperHeat[];
+}
+
+/** One track's full frontier list for /track/:key, each paper with its deep reading when generated. */
+export interface TrackDetail {
+  key: string | null;
+  label: string;
+  count: number;
+  selectedCount: number;
+  deepReadCount: number;
+  papers: Array<PaperHeat & { deepRead: DeepRead | null }>;
 }
 
 export interface HeatPoint {
