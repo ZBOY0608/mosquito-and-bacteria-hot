@@ -73,3 +73,23 @@ export function journalMetricsFor(journal: string | null | undefined): JournalMe
   if (!table || !journal) return null;
   return table.get(normalize(journal)) ?? null;
 }
+
+/**
+ * Journal-directory sources (RSS) carry no deposit metadata, so their papers name no journal of their
+ * own; each such source id maps to the journal whose table row it publishes. Ids outside the map (news,
+ * the WHO page) get no metrics.
+ */
+const SOURCE_JOURNAL: Record<string, string> = {
+  "rss-plos-ntd": "PLOS Neglected Tropical Diseases",
+  "rss-plos-pathogens": "PLOS Pathogens",
+  "rss-plos-compbiol": "PLoS Computational Biology",
+  "rss-nature-microbiology": "Nature Microbiology",
+  "rss-trends-parasitology": "Trends in Parasitology",
+  "rss-emi": "Emerging Microbes & Infections",
+  "rss-cdc-eid": "Emerging Infectious Diseases",
+};
+
+/** Metrics for a listing item: its deposited journal, else its journal-directory source's own. */
+export function journalMetricsForItem(journal: string | null | undefined, sourceId: string | null | undefined): JournalMetrics | null {
+  return journalMetricsFor(journal || (sourceId ? SOURCE_JOURNAL[sourceId] : undefined));
+}

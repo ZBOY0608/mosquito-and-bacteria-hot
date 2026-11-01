@@ -37,3 +37,27 @@ export function ScoreLabel({ score, compact = false }: { score: number | null; c
     </span>
   );
 }
+
+export interface JournalMetricsView {
+  impactFactor: string | null;
+  quartile: string | null;
+}
+
+/**
+ * The journal's own standing instead of a score, where the metric table knows the journal: 分区在前
+ * ("Q1/6.7"), parts missing stay absent, and an unmatched journal falls back to the score pill.
+ */
+export function JournalMetricsLabel({ metrics, compact = false }: { metrics: JournalMetricsView | null; compact?: boolean }) {
+  if (!metrics || (!metrics.quartile && !metrics.impactFactor)) return null;
+  const parts = [metrics.quartile, metrics.impactFactor].filter((v): v is string => !!v);
+  return (
+    <span
+      title={`JCR 分区 / 影响因子 · 数据来源：JCR 2026`}
+      aria-label={`该期刊 JCR 分区与影响因子：${parts.join(" / ")}`}
+      className="inline-flex h-[20px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-accent-soft px-2 ring-1 ring-inset ring-accent/20"
+    >
+      {!compact && <span className="text-[11px] font-medium leading-none opacity-80">JCR</span>}
+      <span className="mono text-[12.5px] font-bold leading-none tabular-nums text-accent">{parts.join("/")}</span>
+    </span>
+  );
+}

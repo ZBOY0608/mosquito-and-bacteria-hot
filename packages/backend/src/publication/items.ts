@@ -10,6 +10,7 @@ import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { sourceOwnsPost } from "../sources/account.ts";
 import { displayTags, publicSourceName } from "./rules.ts";
 import { foldableSelectionCondition, seatedCondition } from "./scope.ts";
+import { journalMetricsForItem } from "./journal-metrics.ts";
 
 export interface ItemRow {
   id: string;
@@ -33,6 +34,9 @@ export interface ItemRow {
   indexable: boolean;
   fact_id: number | null;
   source_name: string;
+  source_id: string;
+  /** The paper's journal as deposited (literature items); journal-directory sources carry no deposit. */
+  literature_journal: string | null;
   /** Participation mode of the source now (editorial, hot_signal, isolated). */
   source_mode: string;
   x_post: Record<string, any> | null;
@@ -51,7 +55,8 @@ export interface ItemRow {
 export const ITEM_COLUMNS = sql`
   p.article_id AS id, p.title, p.original_title, p.summary, p.reason, p.category, p.tags, p.score,
   p.selected, p.seat, p.channel, p.url, p.published_at, p.discovered_at, p.timeline_at, p.visibility,
-  p.body_mode, p.indexable, p.fact_id, s.name AS source_name, s.participation_mode AS source_mode,
+  p.body_mode, p.indexable, p.fact_id, s.id AS source_id, s.name AS source_name, s.participation_mode AS source_mode,
+  a.raw->'literature'->>'journal' AS literature_journal,
   a.x_post, a.author, a.language,
   CASE WHEN s.kind = 'x_search' AND ${sourceOwnsPost(sql`s.config`, sql`a.x_post->>'handle'`)} THEN s.icon_url END AS author_avatar_url,
   st.public_id::text AS story_public_id, st.title AS story_title,
@@ -151,6 +156,7 @@ export function showsPost(row: { channel: string; body_mode: string }): boolean 
 
 /** The shared public article; its X post is added as each answer shows it. */
 export function toItemSummary(row: ItemRow): ItemSummary {
+  const metrics = journalMetricsForItem(row.literature_journal, row.source_id);
   return {
     id: row.id,
     title: row.title,
@@ -168,6 +174,7 @@ export function toItemSummary(row: ItemRow): ItemSummary {
     selected: row.selected,
     channel: row.channel,
     story: row.story_public_id ? { publicId: row.story_public_id, title: row.story_title ?? "" } : null,
+    journalMetrics: metrics ? { impactFactor: metrics.impactFactor, quartile: metrics.quartile } : null,
   };
 }
 
@@ -179,6 +186,7 @@ export function toFeedItemSummary(row: ItemRow): FeedItemSummary {
     id: item.id, title: item.title, summary: item.summary ?? (x?.text || null), reason: item.reason,
     source: item.source, publishedAt: item.publishedAt, timelineAt: item.timelineAt,
     category: item.category, tags: item.tags, score: item.score, selected: item.selected, channel: item.channel,
+    journalMetrics: item.journalMetrics,
     x: x ? {
       authorName: x.authorName, handle: x.handle, avatarUrl: x.avatarUrl,
       ...(x.avatarSrcSet ? { avatarSrcSet: x.avatarSrcSet } : {}), media: x.media,
