@@ -122,8 +122,10 @@ export const EDITION: Record<ReportKind, string> = { daily: `${EDITION_WHEN.dail
  */
 const UNITS = REPORTS.metricUnits;
 const METRICS: Array<[key: string, unit: string]> = [
+  ["collected", UNITS.collected],
   ["totalEvents", ENTRIES_UNIT],
   ["totalStories", ENTRIES_UNIT],
+  ["tracks", UNITS.tracks],
   ["sourcesCount", UNITS.sourcesCount],
   ...(RELEASE ? [["modelsReleased", RELEASE.unit] as [string, string]] : []),
   ["selectedCount", UNITS.selectedCount],

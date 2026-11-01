@@ -389,6 +389,12 @@ export interface ReportDetail {
    * else from another public report of that event. Captioned with the story when it is not the lead's own.
    */
   cover: { url: string; srcSet?: string; width: number | null; height: number | null; caption: string | null } | null;
+  /** A daily's headline finding, quoted from the original abstract — the evidence its lead stands on. */
+  leadEvidence?: string | null;
+  /** A daily's whole harvest: every scored publication of the window grouped by track, selected or not. */
+  dayPicks?: Array<{ label: string; count: number; items: Array<{ itemId: string; title: string; score: number }> }> | null;
+  /** A daily's entries that scored just under the selection line. */
+  nearMisses?: Array<{ itemId: string; title: string; score: number }> | null;
   metrics: Record<string, number>;
   readingMinutes: number;
   prev: string | null;

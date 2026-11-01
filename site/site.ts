@@ -210,7 +210,7 @@ export const REPORTS = {
    */
   entry: { measure: "篇", noun: "文献" },
   /** 报头上其余几个数字后面的说法；精选数和日报期数在关于页、主题页也这样写。 */
-  metricUnits: { sourcesCount: "个来源", firstPartyEvents: "件一手发布", selectedCount: "条精选", reportsCovered: "期简报" },
+  metricUnits: { collected: "篇收录", tracks: "条轨道", sourcesCount: "个来源", firstPartyEvents: "件一手发布", selectedCount: "条精选", reportsCovered: "期简报" },
   /** 报告分享图上“共几条”的说法。 */
   shareUnit: "篇文献",
   /** 日报时段内有资料经过评判、但没有新文献时的标题与导语。 */

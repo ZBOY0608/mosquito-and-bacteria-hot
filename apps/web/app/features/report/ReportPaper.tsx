@@ -454,14 +454,19 @@ function History({ report, index }: { report: ReportDetail; index: ReportNavigat
   );
 }
 
-/** The issue's pages for the phone outline: the front page, each page under its number, then 快讯. */
+/** The issue's pages for the phone outline: the front page, 当日收录, each page under its number, 擦边, 快讯. */
 export function reportOutline(report: ReportDetail): OutlineEntry[] {
   const pages = pagesOf(report, leadStoryOf(report));
-  if (pages.length === 0 && report.flashes.length === 0) return [];
+  const picks = report.dayPicks && report.dayPicks.length > 0;
+  const near = report.nearMisses && report.nearMisses.length > 0;
+  if (pages.length === 0 && report.flashes.length === 0 && !picks && !near) return [];
+  let n = 1;
   return [
     { id: "report-start", text: "头版", level: 2, mark: "" },
+    ...(picks ? [{ id: "s-picks", text: "当日收录", level: 2, mark: "" }] : []),
     ...pages.map((p, i) => ({ id: p.id, text: p.label, level: 2, mark: pad(i + 1), note: `${p.items.length} 件` })),
-    ...(report.flashes.length > 0 ? [{ id: "s-flash", text: "快讯", level: 2, mark: pad(pages.length + 1), note: `${report.flashes.length} 条` }] : []),
+    ...(near ? [{ id: "s-near", text: "擦边未入选", level: 2, mark: pad(pages.length + 1) }] : []),
+    ...(report.flashes.length > 0 ? [{ id: "s-flash", text: "快讯", level: 2, mark: pad(pages.length + 1 + (near ? 1 : 0)), note: `${report.flashes.length} 条` }] : []),
   ];
 }
 
@@ -484,6 +489,43 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         </>
       )}
 
+      {/* 头条深读: the finding the lead stands on, quoted from the paper's own abstract. A daily only. */}
+      {daily && report.leadEvidence && (
+        <section aria-label="头条深读" className="border-b border-line py-7 @[880px]:py-9">
+          <Kicker>头条深读</Kicker>
+          <p className="mt-4 max-w-[46em] border-l-2 border-accent pl-4 text-[15.5px] leading-[1.9] text-ink-2">“{report.leadEvidence}”</p>
+          <p className="mt-2.5 text-[12px] text-ink-4">摘自论文原文——头条的 AI 导读以这句为据。</p>
+        </section>
+      )}
+
+      {/* 当日收录: everything the day scored, grouped by track — the selection reads against this. */}
+      {daily && (report.dayPicks?.length ?? 0) > 0 && (
+        <section id="s-picks" aria-label="当日收录" className="scroll-mt-[calc(var(--bar-h)+1.5rem)] border-b border-line py-7 @[880px]:py-9">
+          <Kicker>当日收录 · 分轨速览</Kicker>
+          <p className="mt-3 text-[13px] text-ink-4">当天经过评分的全部新文献，按轨道分组——入选的在正文里，其余的也在这里。</p>
+          <div className="mt-5 grid gap-5 @[760px]:grid-cols-2">
+            {report.dayPicks!.map((g) => (
+              <div key={g.label} className="well rounded-panel px-4 py-3.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[14px] font-bold text-ink">{g.label}</span>
+                  <span className="num shrink-0 text-[12px] text-ink-4">{g.count} 篇</span>
+                </div>
+                <ul className="mt-2.5 space-y-2">
+                  {g.items.map((p) => (
+                    <li key={p.itemId} className="flex gap-2.5 text-[13.5px] leading-[1.6]">
+                      <span className="num shrink-0 text-[12px] text-ink-4">{p.score}</span>
+                      <IntentLink viewTransition to={`/items/${p.itemId}`} className="min-w-0 text-ink-2 transition-colors hover:text-accent">
+                        {p.title}
+                      </IntentLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {pages.map((p, i) => (
         <SectionPage key={p.id} id={p.id} no={i + 1} label={p.label}>
           {p.summary && (
@@ -496,8 +538,26 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         </SectionPage>
       ))}
 
+      {report.nearMisses && report.nearMisses.length > 0 && (
+        <SectionPage id="s-near" no={pages.length + 1} label="擦边未入选">
+          <p className="border-b border-line py-5 text-[13.5px] leading-[1.8] text-ink-4">
+            这几篇差几分没过入选线。评分来自统一的 AI 标准，擦边的往往也值得点开——由你判断。
+          </p>
+          <ul>
+            {report.nearMisses.map((n) => (
+              <li key={n.itemId} className="flex items-baseline gap-3 border-b border-line py-3.5 text-[14px]">
+                <span className="num shrink-0 text-[12.5px] text-ink-4">{n.score} 分</span>
+                <Link viewTransition to={`/items/${n.itemId}`} className="min-w-0 text-ink-2 transition-colors hover:text-accent">
+                  {n.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </SectionPage>
+      )}
+
       {report.flashes.length > 0 && (
-        <SectionPage id="s-flash" no={pages.length + 1} label="快讯">
+        <SectionPage id="s-flash" no={pages.length + 1 + (report.nearMisses?.length ? 1 : 0)} label="快讯">
           <ul className={`${COLUMNS} @[1040px]:columns-3`}>
             {report.flashes.map((f, i) => (
               <li key={`${keyOf(f)}-${i}`} className="flex break-inside-avoid gap-2.5 border-b border-line py-3 text-[14.5px] leading-[1.65]">

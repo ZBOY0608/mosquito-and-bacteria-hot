@@ -5,7 +5,7 @@
 // (industry/prompts/report-period*.md).
 import { z } from "zod";
 import { EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
-import { PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
+import { CATEGORIES, PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { modelFor } from "../editorial/models.ts";
 import { ENTITIES, entityNames, isRelease } from "../editorial/vocabulary.ts";
@@ -15,6 +15,7 @@ import { logError } from "../lib/log-error.ts";
 import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
+import { listedCondition } from "../publication/scope.ts";
 import { emit } from "../modules.ts";
 import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry } from "./edition.ts";
 
@@ -96,18 +97,53 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
   if (edition.entries.length === 0 && edition.stats.judgedReports === 0) throw new Error(`daily ${date}: nothing judged in its window`);
   const issue = arrangeDaily(edition.entries);
   const [lead, ...rest] = issue.main;
+
+  // The day's whole harvest, not only what cleared the bar: every scored publication of the window
+  // grouped by its track, and the entries that scored just under the line. The issue explains its
+  // selection against what it received, so a thin day still shows everything that came in.
+  const picks = await sql<{ category: string | null; item_id: string; title: string; score: number; selected: boolean }[]>`
+    SELECT p.category, p.article_id AS item_id, p.title, p.score, p.selected
+    FROM publications p
+    WHERE ${listedCondition(end)} AND p.score IS NOT NULL AND NOT p.backfill
+      AND p.timeline_at >= ${start} AND p.timeline_at < ${end}
+    ORDER BY p.score DESC`;
+  const trackLabel = (c: string | null) => CATEGORIES.find((x) => x.key === c)?.label ?? "其他";
+  const pickGroups = new Map<string, { label: string; count: number; items: Array<{ itemId: string; title: string; score: number }> }>();
+  for (const p of picks) {
+    const label = trackLabel(p.category);
+    const group = pickGroups.get(label) ?? { label, count: 0, items: [] };
+    if (group.items.length < 4) group.items.push({ itemId: p.item_id, title: p.title, score: p.score });
+    group.count += 1;
+    pickGroups.set(label, group);
+  }
+  const dayPicks = [...pickGroups.values()].sort((a, b) => b.count - a.count);
+  // 擦边：just under the selection line (industry/selection.ts holds the bar itself); a reader seeing
+  // what missed it by a couple of points can judge the bar against the day.
+  const nearMisses = picks
+    .filter((p) => !p.selected && p.score >= 55 && p.score < 60)
+    .slice(0, 5)
+    .map((p) => ({ itemId: p.item_id, title: p.title, score: p.score }));
+  const leadEvidence = lead
+    ? ((await sql<{ evidence: string | null }[]>`
+        SELECT output->'fact'->>'evidence' AS evidence FROM analyses
+        WHERE article_id = ${lead.entry.itemId} AND selected ORDER BY created_at DESC LIMIT 1`)[0]?.evidence ?? null)
+    : null;
+
   const content = {
     date,
     lead: lead
       ? { title: lead.entry.title, leadParagraph: lead.entry.summary }
       : { title: REPORTS.quiet.title, leadParagraph: REPORTS.quiet.paragraph.replace("{start}", windowPoint(start)).replace("{end}", windowPoint(end)) },
     leadItemId: lead?.entry.itemId ?? null,
+    ...(leadEvidence ? { leadEvidence } : {}),
     highlights: rest.slice(0, 3).map((e) => e.entry.itemId),
     sections: SECTION_ORDER
       .map((label) => ({ label, items: issue.main.filter((e) => sectionOf(e.category) === label).map((e) => e.entry) }))
       .filter((s) => s.items.length > 0),
     flashes: issue.flashes.map((e) => e.entry),
-    metrics: dailyMetrics(issue.main),
+    ...(dayPicks.length ? { dayPicks } : {}),
+    ...(nearMisses.length ? { nearMisses } : {}),
+    metrics: { ...dailyMetrics(issue.main), collected: picks.length, tracks: dayPicks.length },
     windowStart: start.toISOString(),
     windowEnd: end.toISOString(),
     generator: { version: REPORT_VERSION, ...edition.stats, ...issue.stats },
