@@ -34,22 +34,23 @@ const RANK_COLOR = ["text-rank-1", "text-rank-2", "text-rank-3"];
 const rankColor = (rank: number) => RANK_COLOR[rank - 1] ?? "text-rank-rest";
 const pad = (rank: number) => String(rank).padStart(2, "0");
 
-/** One track's week: how much came in, what it scored on average, and the paper that leads it. */
+/** One track's week: how much came in, how much cleared the bar, and the paper in the strongest journal. */
 function TrackCard({ t }: { t: TrackHeat }) {
+  const metricsLine = t.top && (t.top.quartile || t.top.impactFactor)
+    ? [t.top.quartile, t.top.impactFactor].filter(Boolean).join("/")
+    : null;
   return (
     <div className="card p-5">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[16px] font-bold text-ink">{t.label}</h2>
-        <span className="num shrink-0 text-[12.5px] text-ink-4">{t.count} 篇</span>
+        <span className="num shrink-0 text-[12.5px] text-ink-4">
+          {t.count} 篇{t.selectedCount > 0 ? ` · 精选 ${t.selectedCount}` : ""}
+        </span>
       </div>
-      {t.avgScore !== null && (
-        <p className="mt-2 text-[12.5px] text-ink-4">
-          平均评分 <span className="num text-[14px] font-semibold text-ink-2">{t.avgScore}</span>
-        </p>
-      )}
       {t.top && (
         <p className="mt-3 border-t border-line pt-3 text-[13.5px] leading-[1.6] text-ink-2">
-          <span className="mr-1.5 whitespace-nowrap text-[11.5px] text-ink-4">轨道最高 {t.top.score}</span>
+          {metricsLine && <span className="mr-1.5 whitespace-nowrap text-[11.5px] font-semibold text-accent">{metricsLine}</span>}
+          {t.top.journal && <span className="mr-1.5 whitespace-nowrap text-[11.5px] text-ink-4">{t.top.journal}</span>}
           <IntentLink viewTransition to={`/items/${t.top.itemId}`} className="transition-colors hover:text-accent">
             {t.top.title}
           </IntentLink>

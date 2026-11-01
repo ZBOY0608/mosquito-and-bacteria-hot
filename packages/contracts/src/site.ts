@@ -287,8 +287,10 @@ export interface TrackHeat {
   key: string | null;
   label: string;
   count: number;
-  avgScore: number | null;
-  top: { itemId: string; title: string; score: number } | null;
+  /** How many of the week's items cleared the selection line. */
+  selectedCount: number;
+  /** The week's paper in the highest-impact journal (by the operator's metric table), tie by score. */
+  top: { itemId: string; title: string; journal: string | null; quartile: string | null; impactFactor: string | null } | null;
 }
 
 export interface PaperHeat {

@@ -6,13 +6,16 @@ import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { sql } from "../db.ts";
 import { cached, type Cached } from "../lib/cache.ts";
 import { listedCondition } from "./scope.ts";
+import { journalMetricsForItem, journalNameForSource } from "./journal-metrics.ts";
 
 export interface TrackHeat {
   key: string | null;
   label: string;
   count: number;
-  avgScore: number | null;
-  top: { itemId: string; title: string; score: number } | null;
+  /** How many of the week's items cleared the selection line. */
+  selectedCount: number;
+  /** The week's paper in the highest-impact journal (by the operator's metric table), tie by score. */
+  top: { itemId: string; title: string; journal: string | null; quartile: string | null; impactFactor: string | null } | null;
 }
 
 export interface PaperHeat {
@@ -39,6 +42,9 @@ interface Row {
   title: string;
   summary: string | null;
   score: number;
+  selected: boolean;
+  source_id: string;
+  journal: string | null;
   source_name: string;
   at: Date;
 }
@@ -49,23 +55,39 @@ async function compute(): Promise<SevenDayHeat> {
   const days = 7;
   const since = new Date(Date.now() - days * 86_400_000);
   const rows = await sql<Row[]>`
-    SELECT p.category, p.article_id AS item_id, p.title, p.summary, p.score, s.name AS source_name,
+    SELECT p.category, p.article_id AS item_id, p.title, p.summary, p.score, p.selected,
+      a.raw->'literature'->>'journal' AS journal, s.id AS source_id, s.name AS source_name,
       coalesce(p.published_at, p.discovered_at) AS at
-    FROM publications p JOIN sources s ON s.id = p.source_id
+    FROM publications p JOIN sources s ON s.id = p.source_id JOIN articles a ON a.id = p.article_id
     WHERE ${listedCondition(new Date())} AND p.score IS NOT NULL AND NOT p.backfill
       AND p.timeline_at >= ${since}
     ORDER BY p.score DESC, at DESC`;
   const byTrack = new Map<string, TrackHeat>();
   for (const r of rows) {
     const key = r.category ?? "";
-    const t = byTrack.get(key) ?? { key: r.category, label: label(r.category), count: 0, avgScore: null, top: null };
+    const t = byTrack.get(key) ?? { key: r.category, label: label(r.category), count: 0, selectedCount: 0, top: null };
     t.count += 1;
-    if (t.top === null) t.top = { itemId: r.item_id, title: r.title, score: r.score };
+    if (r.selected) t.selectedCount += 1;
     byTrack.set(key, t);
   }
+  // 每条轨的代表作:发表期刊影响因子最高的那篇(表里没有的排最后),平分时先收录的先。
   const tracks = [...byTrack.values()].map((t) => {
-    const scored = rows.filter((r) => (r.category ?? "") === (t.key ?? "")).map((r) => r.score);
-    return { ...t, avgScore: scored.length ? Math.round((scored.reduce((a, b) => a + b, 0) / scored.length) * 10) / 10 : null };
+    const trackRows = rows.filter((r) => (r.category ?? "") === (t.key ?? ""));
+    const withIf = trackRows.map((r) => ({ r, m: journalMetricsForItem(r.journal, r.source_id) }));
+    const best = withIf
+      .map((x) => ({ x, ifv: x.m?.impactFactor ? parseFloat(x.m.impactFactor) : -1 }))
+      .sort((a, b) => b.ifv - a.ifv || b.x.r.score - a.x.r.score || b.x.r.at.getTime() - a.x.r.at.getTime())[0];
+    const topRow = best?.x.r ?? null;
+    const top = topRow
+      ? {
+          itemId: topRow.item_id,
+          title: topRow.title,
+          journal: topRow.journal ?? journalNameForSource(topRow.source_id) ?? topRow.source_name,
+          quartile: best?.x.m?.quartile ?? null,
+          impactFactor: best?.x.m?.impactFactor ?? null,
+        }
+      : null;
+    return { ...t, top };
   }).sort((a, b) => b.count - a.count);
   const papers = rows.slice(0, 10).map((r) => ({
     itemId: r.item_id,
