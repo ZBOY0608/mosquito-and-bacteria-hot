@@ -26,6 +26,10 @@ export interface PaperHeat {
   category: string | null;
   categoryLabel: string;
   sourceName: string;
+  journal: string | null;
+  quartile: string | null;
+  impactFactor: string | null;
+  isTop: boolean;
   at: string;
 }
 
@@ -89,22 +93,39 @@ async function compute(): Promise<SevenDayHeat> {
       : null;
     return { ...t, top };
   }).sort((a, b) => b.count - a.count);
-  const papers = rows.slice(0, 10).map((r) => ({
-    itemId: r.item_id,
-    title: r.title,
-    summary: r.summary,
-    score: r.score,
-    category: r.category,
-    categoryLabel: label(r.category),
-    sourceName: r.source_name,
-    at: r.at.toISOString(),
-  }));
+  // 前沿文献榜:近一年,按「期刊影响因子加权 + AI 评分」排序——顶刊与大子刊浮在前面。
+  // 期刊影响因子 × 2 是量纲桥(IF 21.9 的权重 ≈ 44 分),让期刊质量与内容评分同台竞争;
+  // 表里没有的期刊只按评分排,顶刊徽章按影响因子 ≥ 10 判定(近似"1 区 Top"的语义)。
+  const papers = rows
+    .map((r) => {
+      const m = journalMetricsForItem(r.journal, r.source_id);
+      const ifv = m?.impactFactor ? parseFloat(m.impactFactor) : 0;
+      const weighted = r.score + 2 * ifv;
+      return {
+        itemId: r.item_id,
+        title: r.title,
+        summary: r.summary,
+        score: r.score,
+        weighted,
+        category: r.category,
+        categoryLabel: label(r.category),
+        sourceName: r.source_name,
+        journal: r.journal ?? journalNameForSource(r.source_id),
+        quartile: m?.quartile ?? null,
+        impactFactor: m?.impactFactor ?? null,
+        isTop: ifv >= 10,
+        at: r.at.toISOString(),
+      };
+    })
+    .sort((a, b) => b.weighted - a.weighted || b.at.localeCompare(a.at))
+    .slice(0, 20)
+    .map(({ weighted: _w, ...p }) => p);
   return { days, computedAt: new Date().toISOString(), tracks, papers };
 }
 
 let cache: Cached<SevenDayHeat> | null = null;
 
-/** The seven-day heat, cached for an hour: the numbers move slowly and the page reads them per request. */
+/** The year's frontier board, cached for an hour: the numbers move slowly and the page reads them per request. */
 export function sevenDayHeatCached(): Promise<SevenDayHeat> {
   if (!cache) {
     cache = cached(compute, { freshMs: 3_600_000, maxStaleMs: 6 * 3_600_000 });

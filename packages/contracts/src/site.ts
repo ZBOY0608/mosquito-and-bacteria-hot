@@ -301,6 +301,10 @@ export interface PaperHeat {
   category: string | null;
   categoryLabel: string;
   sourceName: string;
+  journal: string | null;
+  quartile: string | null;
+  impactFactor: string | null;
+  isTop: boolean;
   at: string;
 }
 

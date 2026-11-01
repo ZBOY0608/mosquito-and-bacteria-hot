@@ -6,6 +6,7 @@ import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { pageMeta } from "../lib/seo";
 import { monthDayTime } from "../lib/format";
+import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/Page";
 import { IconChevronDown, IconInfo } from "../components/icons";
 import { PhoneBar } from "../components/shell/PhoneBar";
@@ -13,7 +14,7 @@ import { navUp } from "../components/shell/nav";
 import { scrollBehavior } from "../lib/motion";
 import type { Screen } from "../components/shell/screens";
 
-export const handle: Screen = { tab: navUp("/hot").tab, name: "热点" };
+export const handle: Screen = { tab: navUp("/hot").tab, name: "前沿" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -23,8 +24,8 @@ export async function loader({ request }: { request: Request }) {
 
 export function meta() {
   return pageMeta({
-    title: withSubject("热点榜"),
-    description: "近 7 天收录的文献按轨道汇总：每条轨收了多少、平均什么水平，以及评分最高的一批。",
+    title: withSubject("前沿榜"),
+    description: "近一年收录的文献，按期刊影响因子加权与 AI 评分排出最前沿的研究：顶刊与大子刊浮在前面。",
     path: "/hot",
     image: "/og/pages/hot.png",
   });
@@ -34,7 +35,7 @@ const RANK_COLOR = ["text-rank-1", "text-rank-2", "text-rank-3"];
 const rankColor = (rank: number) => RANK_COLOR[rank - 1] ?? "text-rank-rest";
 const pad = (rank: number) => String(rank).padStart(2, "0");
 
-/** One track's week: how much came in, how much cleared the bar, and the paper in the strongest journal. */
+/** One track's year: how much came in, how much cleared the bar, and the paper in the strongest journal. */
 function TrackCard({ t }: { t: TrackHeat }) {
   const metricsLine = t.top && (t.top.quartile || t.top.impactFactor)
     ? [t.top.quartile, t.top.impactFactor].filter(Boolean).join("/")
@@ -60,11 +61,12 @@ function TrackCard({ t }: { t: TrackHeat }) {
   );
 }
 
-/** One row of the best-of list: rank, title, track and source, and the score it came in with. */
+/** One row of the frontier list: rank, title, journal standing and the date it was published. */
 function PaperRow({ p, rank }: { p: PaperHeat; rank: number }) {
+  const metricsLine = [p.quartile, p.impactFactor].filter(Boolean).join("/");
   return (
     <li className="group grid grid-cols-[34px_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-3.5 transition-colors hover:bg-bg-sunk/70 sm:px-5 dark:hover:bg-bg-muted/40">
-      <span className={`num text-[16px] font-semibold leading-[24px] ${rankColor(rank)}`} aria-label={`评分排名第 ${rank} 位`}>
+      <span className={`num text-[16px] font-semibold leading-[24px] ${rankColor(rank)}`} aria-label={`前沿排名第 ${rank} 位`}>
         {pad(rank)}
       </span>
       <div className="min-w-0">
@@ -72,14 +74,19 @@ function PaperRow({ p, rank }: { p: PaperHeat; rank: number }) {
           <IntentLink viewTransition to={`/items/${p.itemId}`} className="transition-colors hover:text-accent">
             {p.title}
           </IntentLink>
+          {p.isTop && (
+            <Badge tone="hot" title="发表在影响因子 ≥ 10 的期刊上">
+              顶刊
+            </Badge>
+          )}
         </h3>
         <div className="mt-1 flex flex-wrap items-center gap-x-2.5 text-[12px] text-ink-4">
+          {metricsLine && <span className="num text-accent">{metricsLine}</span>}
           <span className="rounded-full bg-bg-sunk px-2 py-0.5 text-[11.5px] text-ink-3">{p.categoryLabel}</span>
-          <span>{p.sourceName}</span>
-          <span className="num">{p.at.slice(5, 10).replace("-", "/")}</span>
+          <span>{p.journal ?? p.sourceName}</span>
+          <span className="num">{p.at.slice(0, 10).replace(/-/g, "/")}</span>
         </div>
       </div>
-      <span className="num text-[20px] font-semibold leading-none text-ink">{p.score}</span>
     </li>
   );
 }
@@ -97,11 +104,11 @@ export default function HotPage() {
   return (
     <div className="pb-10">
       <PhoneBar
-        title="热点"
+        title="前沿"
         large
         sub={
           <>
-            近 {hot.days} 天收录 {hot.papers.length} 篇 · {hot.tracks.length} 条轨道
+            近一年最前沿的 {hot.papers.length} 篇 · {hot.tracks.length} 条轨道
             {hot.computedAt && (
               <>
                 {" · "}
@@ -123,23 +130,23 @@ export default function HotPage() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-hot opacity-30" />
               <span className="relative inline-flex size-2 rounded-full bg-hot" />
             </span>
-            近 7 天
+            近一年
           </div>
-          <h1 className="mt-1.5 text-[24px] font-bold leading-[1.3] tracking-[-0.01em] text-ink lg:text-[26px]">{withSubject("热点榜")}</h1>
+          <h1 className="mt-1.5 text-[24px] font-bold leading-[1.3] tracking-[-0.01em] text-ink lg:text-[26px]">{withSubject("前沿榜")}</h1>
           <p className="mt-1.5 text-[13.5px] text-ink-3">
-            近 {hot.days} 天收录 {hot.papers.length} 篇文献 · {hot.tracks.length} 条轨道
+            近一年收录 {hot.papers.length} 篇文献 · {hot.tracks.length} 条轨道 · 期刊质量加权排序
           </p>
         </div>
         {hot.computedAt && (
           <p className="text-[12px] text-ink-4">
-            <span className="num">{monthDayTime(hot.computedAt)}</span> 更新 · 按评分与轨道汇总
+            <span className="num">{monthDayTime(hot.computedAt)}</span> 更新 · 每小时刷新
           </p>
         )}
       </header>
 
       {hot.papers.length === 0 ? (
         <div className="card rounded-sheet">
-          <EmptyState title="近 7 天还没有收录">站点恢复收录后，这里会汇总每条轨道的收成和评分最高的文献。</EmptyState>
+          <EmptyState title="近一年还没有收录">站点恢复收录后，这里会排出每条轨道最前沿的研究。</EmptyState>
         </div>
       ) : (
         <>
@@ -151,10 +158,10 @@ export default function HotPage() {
             </section>
           )}
 
-          <section aria-label="高分文献榜" className="mt-7">
+          <section aria-label="前沿文献榜" className="mt-7">
             <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="text-[15px] font-semibold text-ink">高分文献榜</h2>
-              <span className="hidden text-[12px] text-ink-4 lg:block">近 {hot.days} 天 · 按 AI 评分排序</span>
+              <h2 className="text-[15px] font-semibold text-ink">前沿文献榜</h2>
+              <span className="hidden text-[12px] text-ink-4 lg:block">近一年 · 期刊质量加权 + AI 评分</span>
             </div>
             <ol className="card divide-y divide-line-soft overflow-hidden">
               {hot.papers.map((p, i) => (
@@ -176,8 +183,8 @@ export default function HotPage() {
           </span>
         </summary>
         <div className="max-w-[760px] space-y-2 pb-2 pl-[21px] pt-2 leading-[1.75] text-ink-3">
-          <p>榜单看的是近 7 天收录、经过 AI 评分的全部文献：每条轨道给收录量和平均分，高分榜按评分排序，同分看收录先后。</p>
-          <p>评分反映证据强度、新颖性、相关度、影响与可执行性（五维加权），不代表讨论热度，也不是期刊的影响因子。一个文献站没有"讨论热度"——一篇论文通常只有一个来源。</p>
+          <p>榜单看近一年收录、经过 AI 评分的全部文献，按「期刊影响因子加权 + 评分」排序：发表在高质量期刊上的研究浮在前面，顶刊（影响因子 ≥ 10）自动打上徽章。</p>
+          <p>评分反映证据强度、新颖性、相关度、影响与可执行性（五维加权），仅用于排序；期刊的分区与影响因子来自 JCR 2026（本站运营者自备的指标表），按期刊名匹配，未收录的期刊按 0 计。</p>
           <p>只统计公开可见的收录；被下架或调整为仅摘要的条目会从榜单移除。每小时刷新一次。</p>
         </div>
       </details>
