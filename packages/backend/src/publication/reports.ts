@@ -335,11 +335,10 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
     ...(c.themes ?? []).flatMap((t: any) => t.storyRefs ?? []),
   ];
   const rawItems = [...entries, ...entries.flatMap((e) => e.related ?? [])];
-  // The day's extra reads (every scored publication of the window and those just under the line) join
+  // The day's extra reads (every scored publication of the window, not only the selected ones) join
   // the same availability read: a withdrawn entry leaves the day's overview like it leaves its section.
   const dayPicksRaw: Array<Record<string, any>> = Array.isArray(c.dayPicks) ? c.dayPicks : [];
-  const nearMissesRaw: Array<Record<string, any>> = Array.isArray(c.nearMisses) ? c.nearMisses : [];
-  const avail = await availability([...new Set([...rawItems, ...dayPicksRaw.flatMap((g: any) => g.items ?? []), ...nearMissesRaw].map((i: any) => i.itemId).filter(Boolean))]);
+  const avail = await availability([...new Set([...rawItems, ...dayPicksRaw.flatMap((g: any) => g.items ?? [])].map((i: any) => i.itemId).filter(Boolean))]);
   const cite = (raw: Record<string, any>) => entryCitation(raw, avail);
 
   const sections: ReportDetail["sections"] = kind === "daily"
@@ -387,7 +386,6 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
       count: Number(g.count) || 0,
       items: (g.items ?? []).filter((i: any) => stillPublic(i, avail)).map((i: any) => ({ itemId: String(i.itemId), title: String(i.title), score: Number(i.score) })),
     })).filter((g: { count: number; items: unknown[] }) => g.count > 0 && g.items.length > 0),
-    nearMisses: nearMissesRaw.filter((n: any) => stillPublic(n, avail)).map((n: any) => ({ itemId: String(n.itemId), title: String(n.title), score: Number(n.score) })),
     cover,
     metrics: {
       ...c.metrics,

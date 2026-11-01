@@ -99,10 +99,10 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
   const [lead, ...rest] = issue.main;
 
   // The day's whole harvest, not only what cleared the bar: every scored publication of the window
-  // grouped by its track, and the entries that scored just under the line. The issue explains its
-  // selection against what it received, so a thin day still shows everything that came in.
-  const picks = await sql<{ category: string | null; item_id: string; title: string; score: number; selected: boolean }[]>`
-    SELECT p.category, p.article_id AS item_id, p.title, p.score, p.selected
+  // grouped by its track. The issue explains its selection against what it received, so a thin day
+  // still shows everything that came in.
+  const picks = await sql<{ category: string | null; item_id: string; title: string; score: number }[]>`
+    SELECT p.category, p.article_id AS item_id, p.title, p.score
     FROM publications p
     WHERE ${listedCondition(end)} AND p.score IS NOT NULL AND NOT p.backfill
       AND p.timeline_at >= ${start} AND p.timeline_at < ${end}
@@ -117,12 +117,6 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
     pickGroups.set(label, group);
   }
   const dayPicks = [...pickGroups.values()].sort((a, b) => b.count - a.count);
-  // 擦边：just under the selection line (industry/selection.ts holds the bar itself); a reader seeing
-  // what missed it by a couple of points can judge the bar against the day.
-  const nearMisses = picks
-    .filter((p) => !p.selected && p.score >= 55 && p.score < 60)
-    .slice(0, 5)
-    .map((p) => ({ itemId: p.item_id, title: p.title, score: p.score }));
   const leadEvidence = lead
     ? ((await sql<{ evidence: string | null }[]>`
         SELECT output->'fact'->>'evidence' AS evidence FROM analyses
@@ -142,7 +136,6 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
       .filter((s) => s.items.length > 0),
     flashes: issue.flashes.map((e) => e.entry),
     ...(dayPicks.length ? { dayPicks } : {}),
-    ...(nearMisses.length ? { nearMisses } : {}),
     metrics: { ...dailyMetrics(issue.main), collected: picks.length, tracks: dayPicks.length },
     windowStart: start.toISOString(),
     windowEnd: end.toISOString(),

@@ -454,19 +454,16 @@ function History({ report, index }: { report: ReportDetail; index: ReportNavigat
   );
 }
 
-/** The issue's pages for the phone outline: the front page, 当日收录, each page under its number, 擦边, 快讯. */
+/** The issue's pages for the phone outline: the front page, 当日收录, each page under its number, 快讯. */
 export function reportOutline(report: ReportDetail): OutlineEntry[] {
   const pages = pagesOf(report, leadStoryOf(report));
   const picks = report.dayPicks && report.dayPicks.length > 0;
-  const near = report.nearMisses && report.nearMisses.length > 0;
-  if (pages.length === 0 && report.flashes.length === 0 && !picks && !near) return [];
-  let n = 1;
+  if (pages.length === 0 && report.flashes.length === 0 && !picks) return [];
   return [
     { id: "report-start", text: "头版", level: 2, mark: "" },
     ...(picks ? [{ id: "s-picks", text: "当日收录", level: 2, mark: "" }] : []),
     ...pages.map((p, i) => ({ id: p.id, text: p.label, level: 2, mark: pad(i + 1), note: `${p.items.length} 件` })),
-    ...(near ? [{ id: "s-near", text: "擦边未入选", level: 2, mark: pad(pages.length + 1) }] : []),
-    ...(report.flashes.length > 0 ? [{ id: "s-flash", text: "快讯", level: 2, mark: pad(pages.length + 1 + (near ? 1 : 0)), note: `${report.flashes.length} 条` }] : []),
+    ...(report.flashes.length > 0 ? [{ id: "s-flash", text: "快讯", level: 2, mark: pad(pages.length + 1), note: `${report.flashes.length} 条` }] : []),
   ];
 }
 
@@ -538,26 +535,8 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         </SectionPage>
       ))}
 
-      {report.nearMisses && report.nearMisses.length > 0 && (
-        <SectionPage id="s-near" no={pages.length + 1} label="擦边未入选">
-          <p className="border-b border-line py-5 text-[13.5px] leading-[1.8] text-ink-4">
-            这几篇差几分没过入选线。评分来自统一的 AI 标准，擦边的往往也值得点开——由你判断。
-          </p>
-          <ul>
-            {report.nearMisses.map((n) => (
-              <li key={n.itemId} className="flex items-baseline gap-3 border-b border-line py-3.5 text-[14px]">
-                <span className="num shrink-0 text-[12.5px] text-ink-4">{n.score} 分</span>
-                <Link viewTransition to={`/items/${n.itemId}`} className="min-w-0 text-ink-2 transition-colors hover:text-accent">
-                  {n.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </SectionPage>
-      )}
-
       {report.flashes.length > 0 && (
-        <SectionPage id="s-flash" no={pages.length + 1 + (report.nearMisses?.length ? 1 : 0)} label="快讯">
+        <SectionPage id="s-flash" no={pages.length + 1} label="快讯">
           <ul className={`${COLUMNS} @[1040px]:columns-3`}>
             {report.flashes.map((f, i) => (
               <li key={`${keyOf(f)}-${i}`} className="flex break-inside-avoid gap-2.5 border-b border-line py-3 text-[14.5px] leading-[1.65]">
