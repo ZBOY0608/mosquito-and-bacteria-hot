@@ -93,3 +93,8 @@ const SOURCE_JOURNAL: Record<string, string> = {
 export function journalMetricsForItem(journal: string | null | undefined, sourceId: string | null | undefined): JournalMetrics | null {
   return journalMetricsFor(journal || (sourceId ? SOURCE_JOURNAL[sourceId] : undefined));
 }
+
+/** The journal a directory source publishes, for display when no deposit metadata exists. */
+export function journalNameForSource(sourceId: string | null | undefined): string | null {
+  return sourceId ? SOURCE_JOURNAL[sourceId] ?? null : null;
+}
